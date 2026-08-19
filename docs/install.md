@@ -3,6 +3,18 @@ Installation
 
 This document describes how to install [actionlint](../docs).
 
+## Astral fork
+
+Astral does not publish actionlint releases or container images yet. To install this fork, choose a
+reviewed full commit SHA from this repository and build it with Go:
+
+```sh
+go install github.com/astral-sh/actionlint/cmd/actionlint@<full-commit-sha>
+```
+
+The package-manager, release, download-script, and container instructions below install upstream
+`rhysd/actionlint`, not this fork. Inherited upstream version tags do not contain Astral's changes.
+
 ## Windows
 
 ### [Chocolatey](https://chocolatey.org/)
