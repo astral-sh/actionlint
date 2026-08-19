@@ -54,6 +54,13 @@ func NewRuleExpression(actionsCache *LocalActionsCache, workflowCache *LocalReus
 // VisitWorkflowPre is callback when visiting Workflow node before visiting its children.
 func (rule *RuleExpression) VisitWorkflowPre(n *Workflow) error {
 	rule.checkString(n.Name, "")
+	hasNonWorkflowCallTrigger := false
+	for _, event := range n.On {
+		if _, ok := event.(*WorkflowCallEvent); !ok {
+			hasNonWorkflowCallTrigger = true
+			break
+		}
+	}
 
 	for _, e := range n.On {
 		switch e := e.(type) {
@@ -148,14 +155,17 @@ func (rule *RuleExpression) VisitWorkflowPre(n *Workflow) error {
 
 			// When no secret is passed, secrets may be inherited from a caller of the workflow.
 			// So `secrets` context must be typed as { string => string }. `e.Secrets` is nil when `secrets:` does not
-			// exist. When `e.Secrets` is an empty map, `secrets:` exists but it has no child.
-			if e.Secrets != nil {
+			// exist. When `e.Secrets` is an empty map, `secrets:` exists but it has no child. A workflow with another
+			// trigger can also access repository secrets on that trigger path, so its secrets type must remain open.
+			if e.Secrets != nil && !hasNonWorkflowCallTrigger {
 				sty := NewEmptyStrictObjectType()
-				for id, s := range e.Secrets {
+				for id := range e.Secrets {
 					sty.Props[id] = StringType{}
-					rule.checkString(s.Description, "")
 				}
 				rule.secretsTy = sty
+			}
+			for _, s := range e.Secrets {
+				rule.checkString(s.Description, "")
 			}
 
 			for _, o := range e.Outputs {
@@ -1017,6 +1027,7 @@ func (rule *RuleExpression) checkWorkflowCallOutputs(outputs map[string]*Workflo
 		}
 		props[n] = NewStrictObjectType(map[string]ExprType{
 			"outputs": o,
+			"result":  StringType{},
 		})
 	}
 	rule.jobsTy = NewStrictObjectType(props)
