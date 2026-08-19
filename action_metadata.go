@@ -1,6 +1,7 @@
 package actionlint
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -251,11 +252,14 @@ func (c *LocalActionsCache) FindMetadata(spec string) (*ActionMetadata, bool, er
 	}
 
 	dir := filepath.Join(c.proj.RootDir(), filepath.FromSlash(spec))
-	b, f, ok := c.readLocalActionMetadataFile(dir)
-	if !ok {
+	b, f, err := c.readLocalActionMetadataFile(spec)
+	if err != nil {
 		c.debug("No action metadata found in %s", dir)
 		// Remember action was not found
 		c.writeCache(spec, nil)
+		if !errors.Is(err, os.ErrNotExist) {
+			return nil, false, fmt.Errorf("could not read action metadata for %q: %w", spec, err)
+		}
 		// Do not complain about the action does not exist (#25, #40).
 		// It seems a common pattern that the local action does not exist in the repository
 		// (e.g. Git submodule) and it is cloned at running workflow (due to a private repository).
@@ -293,15 +297,19 @@ func (c *LocalActionsCache) FindMetadata(spec string) (*ActionMetadata, bool, er
 	return &meta, false, nil
 }
 
-func (c *LocalActionsCache) readLocalActionMetadataFile(dir string) ([]byte, string, bool) {
+func (c *LocalActionsCache) readLocalActionMetadataFile(dir string) ([]byte, string, error) {
 	for _, f := range []string{"action.yaml", "action.yml"} {
-		p := filepath.Join(dir, f)
-		if b, err := os.ReadFile(p); err == nil {
-			return b, f, true
+		p := filepath.Join(filepath.FromSlash(dir), f)
+		b, err := c.proj.readFile(p)
+		if err == nil {
+			return b, f, nil
+		}
+		if !errors.Is(err, os.ErrNotExist) {
+			return nil, "", err
 		}
 	}
 
-	return nil, "", false
+	return nil, "", os.ErrNotExist
 }
 
 // LocalActionsCacheFactory is a factory to create LocalActionsCache instances. LocalActionsCache

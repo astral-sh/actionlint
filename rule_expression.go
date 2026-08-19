@@ -340,8 +340,16 @@ func (rule *RuleExpression) getActionOutputsType(spec *String) *ObjectType {
 		return NewMapObjectType(StringType{})
 	}
 
-	if strings.HasPrefix(spec.Value, "./") {
-		meta, _, err := rule.localActions.FindMetadata(spec.Value)
+	localSpec := spec.Value
+	if strings.HasPrefix(localSpec, "$/") {
+		var err error
+		localSpec, err = selfRepositoryUsesLocalSpec(localSpec)
+		if err != nil {
+			return NewMapObjectType(StringType{})
+		}
+	}
+	if strings.HasPrefix(localSpec, "./") {
+		meta, _, err := rule.localActions.FindMetadata(localSpec)
 		if err != nil {
 			rule.Error(spec.Pos, err.Error())
 			return NewMapObjectType(StringType{})
@@ -373,7 +381,11 @@ func (rule *RuleExpression) getWorkflowCallOutputsType(call *WorkflowCall) *Obje
 		return NewMapObjectType(StringType{})
 	}
 
-	m, err := rule.localWorkflows.FindMetadata(call.Uses.Value)
+	uses := call.Uses.Value
+	if local, ok := workflowCallUsesLocalSpec(uses); ok {
+		uses = local
+	}
+	m, err := rule.localWorkflows.FindMetadata(uses)
 	if err != nil {
 		rule.Error(call.Uses.Pos, err.Error())
 		return NewMapObjectType(StringType{})
@@ -538,7 +550,11 @@ func (rule *RuleExpression) checkWorkflowCall(c *WorkflowCall) {
 
 	rule.checkString(c.Uses, "")
 
-	m, err := rule.localWorkflows.FindMetadata(c.Uses.Value)
+	uses := c.Uses.Value
+	if local, ok := workflowCallUsesLocalSpec(uses); ok {
+		uses = local
+	}
+	m, err := rule.localWorkflows.FindMetadata(uses)
 	if err != nil {
 		rule.Error(c.Uses.Pos, err.Error())
 	}

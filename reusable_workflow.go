@@ -3,7 +3,6 @@ package actionlint
 import (
 	"fmt"
 	"io"
-	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -215,7 +214,7 @@ func (c *LocalReusableWorkflowCache) FindMetadata(spec string) (*ReusableWorkflo
 	}
 
 	file := filepath.Join(c.proj.RootDir(), filepath.FromSlash(spec))
-	src, err := os.ReadFile(file)
+	src, err := c.proj.readFile(filepath.FromSlash(spec))
 	if err != nil {
 		c.writeCache(spec, nil) // Remember the workflow file was not found
 		return nil, fmt.Errorf("could not read reusable workflow file for %q: %w", spec, err)
