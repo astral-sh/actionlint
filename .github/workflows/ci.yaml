@@ -3,6 +3,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: '23 8 * * 1'
   workflow_dispatch:
 
 permissions:
@@ -95,7 +97,7 @@ jobs:
           npm run build
       - run: npm run lint
       - run: npm test
-      - run: npm audit --omit=dev
+      - run: npm audit
 
   lint:
     name: Lint
