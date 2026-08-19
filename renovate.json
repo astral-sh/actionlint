@@ -8,5 +8,12 @@
   "ignorePaths": ["**/node_modules/**", "**/vendor/**", "testdata/**"],
   "gomod": {
     "constraintsFiltering": "strict"
-  }
+  },
+  "packageRules": [
+    {
+      "description": "Keep zizmor and its action's supported version map together",
+      "matchPackageNames": ["zizmorcore/zizmor", "zizmorcore/zizmor-action"],
+      "groupName": "zizmor"
+    }
+  ]
 }
