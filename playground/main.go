@@ -6,7 +6,7 @@ import (
 	"io"
 	"syscall/js"
 
-	"github.com/rhysd/actionlint"
+	"github.com/astral-sh/actionlint"
 )
 
 var (
