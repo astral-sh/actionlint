@@ -13,8 +13,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/astral-sh/actionlint"
+	"github.com/google/go-cmp/cmp"
 )
 
 func Actionlint(src []byte) ([]byte, error) {
