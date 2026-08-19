@@ -360,23 +360,23 @@ Please see [super-linter/super-linter#1852](https://github.com/super-linter/supe
 [pre-commit][] is a framework for managing and maintaining multi-language Git pre-commit hooks. actionlint is available as a
 pre-commit hook to check workflow files in `.github/workflows/` directory.
 
-Add this to your `.pre-commit-config.yaml` in your repository:
+Add this to your `.pre-commit-config.yaml` in your repository, replacing the revision with a reviewed
+full commit SHA from this fork:
 
 ```yaml
 ---
 repos:
-  - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.12
+  - repo: https://github.com/astral-sh/actionlint
+    rev: <full-commit-sha>
     hooks:
       - id: actionlint
 ```
 
-As alternatives to `actionlint` hook, `actionlint-docker` or `actionlint-system` hooks are available.
+The `actionlint-system` hook is also available. This fork does not publish a Docker image yet.
 
 | Hook ID | Explanation |
 |-|-|
 | `actionlint` | Automatically installs `actionlint` command in isolated `$GOPATH` directory using [Go toolchain][go-install]. |
-| `actionlint-docker` | Automatically pulls [the actionlint Docker image](#docker). |
 | `actionlint-system` | Uses system-installed `actionlint` command. The command is necessary to be [installed manually](install.md). |
 
 ### VS Code
