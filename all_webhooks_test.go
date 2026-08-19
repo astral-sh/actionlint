@@ -1,6 +1,9 @@
 package actionlint
 
-import "testing"
+import (
+	"slices"
+	"testing"
+)
 
 func TestGeneratedAllWebhooks(t *testing.T) {
 	if len(AllWebhookTypes) == 0 {
@@ -21,5 +24,18 @@ func TestGeneratedAllWebhooks(t *testing.T) {
 				seen[ty] = struct{}{}
 			}
 		}
+	}
+}
+
+func TestDocumentedWebhookActivityTypes(t *testing.T) {
+	for _, activity := range []string{"field_added", "field_removed"} {
+		if !slices.Contains(AllWebhookTypes["issues"], activity) {
+			t.Errorf("issues activity %q is missing", activity)
+		}
+	}
+	// Webhook payload types are not necessarily supported Actions triggers.
+	// https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#merge_group
+	if !slices.Equal(AllWebhookTypes["merge_group"], []string{"checks_requested"}) {
+		t.Errorf("unexpected merge_group activity types: %v", AllWebhookTypes["merge_group"])
 	}
 }
