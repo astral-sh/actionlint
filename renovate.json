@@ -1,0 +1,12 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "github>astral-sh/renovate-config",
+    "customManagers:githubActionsVersions"
+  ],
+  "forkProcessing": "enabled",
+  "ignorePaths": ["**/node_modules/**", "**/vendor/**", "testdata/**"],
+  "gomod": {
+    "constraintsFiltering": "strict"
+  }
+}
