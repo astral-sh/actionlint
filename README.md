@@ -1,11 +1,25 @@
 actionlint
 ==========
 [![CI Status][ci-badge]][ci]
-[![API Document][apidoc-badge]][apidoc]
+[![Upstream API Document][apidoc-badge]][apidoc]
 
-[actionlint][repo] is a static checker for GitHub Actions workflow files. [Try it online!][playground]
+[actionlint][repo] is a static checker for GitHub Actions workflow files.
 
-Features:
+## Provenance
+
+This repository is a fork of [`rhysd/actionlint`][upstream] intended for use in
+[Astral's](https://astral.sh) continuous integration. We maintain focused compatibility updates for
+GitHub Actions while following upstream development.
+
+The downstream work is informed by upstream pull requests and
+[`kjanat/actionlint`](https://github.com/kjanat/actionlint). Individual changes retain references to
+their original proposals and contributors. See the [commit history][history] for the changes in this
+fork.
+
+The [upstream playground][playground] and [upstream releases][upstream-releases] remain available.
+
+## Features
+
 
 - **Syntax check for workflow files** to check unexpected or missing keys following [workflow syntax][syntax-doc]
 - **Strong type check for `${{ }}` expressions** to catch several semantic errors like access to not existing property,
@@ -84,13 +98,13 @@ test.yaml:22:17: receiver of object dereference "permissions" must be type of ob
 
 ## Quick start
 
-Install `actionlint` command by downloading [the released binary][releases] or by Homebrew or by `go install`. See
-[the installation document][install] for more details like how to manage the command with several package managers
-or run via Docker container.
+This fork does not publish releases yet. Build it from a checkout with Go:
 
 ```sh
-go install github.com/rhysd/actionlint/cmd/actionlint@latest
+go build ./cmd/actionlint
 ```
+
+See [upstream's installation documentation][upstream-install] to install the upstream release.
 
 Basically all you need to do is run the `actionlint` command in your repository. actionlint automatically detects workflows and
 checks errors. actionlint focuses on finding out mistakes. It tries to catch errors as much as possible and make false positives
@@ -127,22 +141,25 @@ See the [contribution guide](./CONTRIBUTING.md) for more details.
 
 actionlint is distributed under [the MIT license](./LICENSE.txt).
 
-[ci-badge]: https://github.com/rhysd/actionlint/actions/workflows/ci.yaml/badge.svg
-[ci]: https://github.com/rhysd/actionlint/actions/workflows/ci.yaml
+[ci-badge]: https://github.com/astral-sh/actionlint/actions/workflows/ci.yaml/badge.svg
+[ci]: https://github.com/astral-sh/actionlint/actions/workflows/ci.yaml
 [apidoc-badge]: https://pkg.go.dev/badge/github.com/rhysd/actionlint.svg
 [apidoc]: https://pkg.go.dev/github.com/rhysd/actionlint
-[repo]: https://github.com/rhysd/actionlint
+[repo]: https://github.com/astral-sh/actionlint
+[upstream]: https://github.com/rhysd/actionlint
+[history]: https://github.com/astral-sh/actionlint/commits/main/
 [playground]: https://rhysd.github.io/actionlint/
 [shellcheck]: https://github.com/koalaman/shellcheck
 [pyflakes]: https://github.com/PyCQA/pyflakes
 [syntax-doc]: https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
 [filter-pattern-doc]: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#filter-pattern-cheat-sheet
 [script-injection-doc]: https://docs.github.com/en/actions/reference/security/secure-use#good-practices-for-mitigating-script-injection-attacks
-[releases]: https://github.com/rhysd/actionlint/releases
-[checks]: https://github.com/rhysd/actionlint/blob/v1.7.12/docs/checks.md
-[install]: https://github.com/rhysd/actionlint/blob/v1.7.12/docs/install.md
-[usage]: https://github.com/rhysd/actionlint/blob/v1.7.12/docs/usage.md
-[config]: https://github.com/rhysd/actionlint/blob/v1.7.12/docs/config.md
-[api]: https://github.com/rhysd/actionlint/blob/v1.7.12/docs/api.md
-[refs]: https://github.com/rhysd/actionlint/blob/v1.7.12/docs/reference.md
-[issue-form]: https://github.com/rhysd/actionlint/issues/new
+[upstream-releases]: https://github.com/rhysd/actionlint/releases
+[upstream-install]: https://github.com/rhysd/actionlint/blob/v1.7.12/docs/install.md
+[checks]: ./docs/checks.md
+[install]: ./docs/install.md
+[usage]: ./docs/usage.md
+[config]: ./docs/config.md
+[api]: ./docs/api.md
+[refs]: ./docs/reference.md
+[issue-form]: https://github.com/astral-sh/actionlint/issues/new
