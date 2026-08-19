@@ -5,8 +5,8 @@ serve: build
 
 b build: node_modules lib main.wasm index.js test.js
 
-node_modules:
-	npm install
+node_modules: package.json package-lock.json .npmrc
+	npm ci --ignore-scripts
 
 index.js test.js: index.ts test.ts lib.d.ts tsconfig.json
 	npm run build
