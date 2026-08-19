@@ -113,7 +113,10 @@ jobs:
             'Acquire::https::Timeout "10";' \
             | sudo tee /etc/apt/apt.conf.d/80-retries > /dev/null
           sudo apt-get update
-          sudo apt-get install -y shellcheck
+          sudo apt-get install -y shellcheck python3-venv
+          python3 -m venv "$RUNNER_TEMP/linters"
+          "$RUNNER_TEMP/linters/bin/pip" install --only-binary=:all: pyflakes==3.4.0
+          echo "$RUNNER_TEMP/linters/bin" >> "$GITHUB_PATH"
           go install honnef.co/go/tools/cmd/staticcheck@v0.7.0
           go install golang.org/x/vuln/cmd/govulncheck@v1.7.0
       - name: Check formatting
