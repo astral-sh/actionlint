@@ -2123,6 +2123,8 @@ jobs:
       issues: readable
       # ERROR: "models" doesn't have "write" scope
       models: write
+      # ERROR: "vulnerability-alerts" only supports "read" or "none"
+      vulnerability-alerts: write
     steps:
       - run: echo hello
 ```
@@ -2134,7 +2136,7 @@ test.yaml:4:14: "write" is invalid for permission for all the scopes. available 
   |
 4 | permissions: write
   |              ^~~~~
-test.yaml:11:7: unknown permission scope "check". all available permission scopes are "actions", "artifact-metadata", "attestations", "checks", "contents", "deployments", "discussions", "id-token", "issues", "models", "packages", "pages", "pull-requests", "repository-projects", "security-events", "statuses" [permissions]
+test.yaml:11:7: unknown permission scope "check". all available permission scopes are "actions", "artifact-metadata", "attestations", "checks", "code-quality", "contents", "deployments", "discussions", "id-token", "issues", "models", "packages", "pages", "pull-requests", "repository-projects", "security-events", "statuses", "vulnerability-alerts" [permissions]
    |
 11 |       check: write
    |       ^~~~~~
@@ -2146,9 +2148,13 @@ test.yaml:15:15: "write" is invalid as permission of scope "models". available v
    |
 15 |       models: write
    |               ^~~~~
+test.yaml:17:29: "write" is invalid as permission of scope "vulnerability-alerts". available values are "read", "none" [permissions]
+   |
+17 |       vulnerability-alerts: write
+   |                             ^~~~~
 ```
 
-[Playground](https://rhysd.github.io/actionlint/#eNpMjdENwyAMBf+Z4i3AAmwDxBK0BCMeVtevSJUqX5bu7LP2gGEszg2ZZyWrdgZ8Zl3i3EsTgwOWcO0JTOv0+8iS9WW+xe0u9QxcAMhF8vuu/VAlTRgwJR4xtRufekjjc5VLxj/k9+MAyUVRpDX9BgAA//8fnji8)
+[Playground](https://rhysd.github.io/actionlint/#eNpUjtGtwyAMRf+ZwguwANtAYgnecwD52q26fUWqVM2XpXOvjz16oumoIUzWowFtdCR6ajMO4W8UpEBkDFuTSL0jriUv3s2j5JWd0a/gBERb5e3/sn1QA5yRSDnvuciFj7Gz4F59uHTWXJo0e8UsrHZrwHh+T8X1WiLe6qDKIuMdAAD//6u/RE0=)
 
 Permissions of `GITHUB_TOKEN` token can be configured at workflow-level or job-level by [`permissions:` section][perm-config-doc].
 Each permission scopes have their access levels. The default levels and available levels are described in
