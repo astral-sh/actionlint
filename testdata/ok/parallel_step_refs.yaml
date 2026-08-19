@@ -1,0 +1,21 @@
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Start server
+        id: server
+        run: echo 'start'
+        background: true
+      - name: Second background step
+        id: second
+        run: echo 'second'
+        background: true
+      - wait: server
+      - wait: [server, second]
+      - wait-all:
+      - cancel: second
+      - parallel:
+          - run: echo a
+          - run: echo b
