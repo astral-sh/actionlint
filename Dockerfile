@@ -15,5 +15,5 @@ FROM alpine:${ALPINE_VER}
 COPY --from=builder /go/src/app/actionlint /usr/local/bin/
 COPY --from=shellcheck /bin/shellcheck /usr/local/bin/shellcheck
 RUN apk add --no-cache py3-pyflakes
-USER guest
+USER 405:100
 ENTRYPOINT ["/usr/local/bin/actionlint"]
