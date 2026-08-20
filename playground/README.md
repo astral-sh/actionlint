@@ -6,7 +6,8 @@ This is a development directory for [actionlint playground](https://rhysd.github
 The playground is built with HTML/CSS/TypeScript/Wasm. All dependencies are defined in `package.json` and managed by `npm`.
 Tasks for development are defined in [`Makefile`](./Makefile).
 
-Install the committed dependency versions with `npm ci`. Dependency lifecycle scripts are disabled in `.npmrc`;
+Use npm 11.10.0 or newer and install the committed dependency versions with `npm ci`. The repository enforces
+package engine requirements and a seven-day minimum release age. Dependency lifecycle scripts are disabled in `.npmrc`;
 the build invokes the first-party `post-install.bash` asset-copying script explicitly. Dependency updates are reviewed
 through the repository's shared Astral Renovate policy.
 
