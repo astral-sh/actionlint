@@ -4,6 +4,9 @@
   "version": "0.0.0",
   "description": "",
   "main": "main.js",
+  "engines": {
+    "npm": ">=11.10.0"
+  },
   "scripts": {
     "lint:stylelint": "stylelint style.css",
     "lint:prettier": "prettier --check *.ts *.mjs",
