@@ -1,0 +1,44 @@
+name: check-pinact
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pinact:
+    name: pinact
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Check action pins
+        shell: bash
+        run: |
+          pinact_dir="$(mktemp -d "$RUNNER_TEMP/pinact.XXXXXX")"
+          # v4.1.1; source b1a554a82ef4f55533237e49c19a24ddf0045100.
+          # The archive digest is covered by the release's signed SLSA provenance.
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "$pinact_dir/pinact.tar.gz" \
+            https://github.com/suzuki-shunsuke/pinact/releases/download/v4.1.1/pinact_linux_amd64.tar.gz
+          printf '%s  %s\n' \
+            d1cffebe5704b74e2e5f8a864efb9f7e54768972dc686188c008033fb1797841 \
+            "$pinact_dir/pinact.tar.gz" | sha256sum --check --strict
+          tar -xzf "$pinact_dir/pinact.tar.gz" -C "$pinact_dir" pinact
+
+          # Linter fixtures intentionally contain invalid and unpinned action references.
+          git ls-files -z -- \
+            ':(glob).github/workflows/*.yml' \
+            ':(glob).github/workflows/*.yaml' \
+            ':(glob)**/action.yml' \
+            ':(glob)**/action.yaml' \
+            ':(exclude,glob)**/testdata/**' \
+            | xargs -0 --no-run-if-empty "$pinact_dir/pinact" run --fix=false --no-api
