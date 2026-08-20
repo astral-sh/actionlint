@@ -1,0 +1,9 @@
+name: Clean workflow
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: printf '%s\n' "$GITHUB_REF"
+      - shell: python
+        run: print("hello")

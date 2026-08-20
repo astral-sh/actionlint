@@ -1,0 +1,9 @@
+name: Invalid scripts
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo $GITHUB_REF
+      - shell: python
+        run: print(undefined_name)
