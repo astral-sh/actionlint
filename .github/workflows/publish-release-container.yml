@@ -1,0 +1,143 @@
+name: Publish release container
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      binaries:
+        required: true
+        type: string
+      container:
+        required: true
+        type: string
+      digest:
+        required: true
+        type: string
+    outputs:
+      artifact-id:
+        value: ${{ jobs.publish.outputs.artifact-id }}
+      digest:
+        value: ${{ jobs.publish.outputs.digest }}
+
+permissions: {}
+
+jobs:
+  publish:
+    if: github.repository == 'astral-sh/actionlint' && github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && vars.RELEASE_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    environment:
+      name: release
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    outputs:
+      digest: ${{ steps.verify.outputs.digest }}
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.26.6'
+          cache: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ inputs.binaries }}
+          merge-multiple: true
+          path: ${{ runner.temp }}/dist
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ inputs.container }}
+          merge-multiple: true
+          path: ${{ runner.temp }}/container
+      - name: Verify the prebuilt image
+        id: verify
+        env:
+          GOTOOLCHAIN: local
+          GOPROXY: 'off'
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_COMMIT: ${{ github.sha }}
+          EXPECTED_DIGEST: ${{ inputs.digest }}
+        run: |
+          set -euo pipefail
+          bash ./scripts/check-release.bash "$RELEASE_VERSION" "$RUNNER_TEMP/dist"
+          digest=$(go run ./scripts/release-container -layout "$RUNNER_TEMP/container/layout" \
+            -dist "$RUNNER_TEMP/dist" -output "$RUNNER_TEMP/container-metadata" \
+            -version "$RELEASE_VERSION" -commit "$RELEASE_COMMIT")
+          test "$digest" = "$EXPECTED_DIGEST"
+          diff -r "$RUNNER_TEMP/container/metadata" "$RUNNER_TEMP/container-metadata"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          bash ./scripts/install-crane.bash "$RUNNER_TEMP/crane"
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Push the verified image by digest
+        env:
+          IMAGE_DIGEST: ${{ steps.verify.outputs.digest }}
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/crane/crane" push "$RUNNER_TEMP/container/layout" \
+            "ghcr.io/astral-sh/actionlint@$IMAGE_DIGEST"
+          "$RUNNER_TEMP/crane/crane" digest "ghcr.io/astral-sh/actionlint@$IMAGE_DIGEST" | grep -Fx "$IMAGE_DIGEST"
+      - uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8 # v3.1.0
+        id: image-provenance
+        with:
+          subject-name: ghcr.io/astral-sh/actionlint
+          subject-digest: ${{ steps.verify.outputs.digest }}
+          push-to-registry: true
+          create-storage-record: false
+      - name: Verify image signing identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IMAGE_DIGEST: ${{ steps.verify.outputs.digest }}
+          RELEASE_COMMIT: ${{ github.sha }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          BUNDLE_PATH: ${{ steps.image-provenance.outputs.bundle-path }}
+        run: |
+          set -euo pipefail
+          gh attestation verify "oci://ghcr.io/astral-sh/actionlint@$IMAGE_DIGEST" \
+            --repo astral-sh/actionlint --bundle-from-oci \
+            --signer-workflow astral-sh/actionlint/.github/workflows/publish-release-container.yml \
+            --source-ref refs/heads/main --source-digest "$RELEASE_COMMIT" \
+            --signer-digest "$RELEASE_COMMIT" --deny-self-hosted-runners
+          cp "$BUNDLE_PATH" "$RUNNER_TEMP/container-metadata/actionlint_${RELEASE_VERSION}_container-attestation.json"
+      - name: Require anonymous access to the published image
+        env:
+          IMAGE_DIGEST: ${{ steps.verify.outputs.digest }}
+        run: bash ./scripts/check-public-container.bash "$IMAGE_DIGEST"
+      - uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8 # v3.1.0
+        id: metadata-provenance
+        with:
+          subject-path: ${{ runner.temp }}/container-metadata/*
+          create-storage-record: false
+      - name: Preserve metadata signature and version tag
+        env:
+          IMAGE_DIGEST: ${{ steps.verify.outputs.digest }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          BUNDLE_PATH: ${{ steps.metadata-provenance.outputs.bundle-path }}
+        run: |
+          set -euo pipefail
+          cp "$BUNDLE_PATH" "$RUNNER_TEMP/container-metadata/actionlint_${RELEASE_VERSION}_container-metadata-attestation.json"
+          image=ghcr.io/astral-sh/actionlint
+          tags=$("$RUNNER_TEMP/crane/crane" ls "$image")
+          if grep -Fxq "$RELEASE_VERSION" <<< "$tags"; then
+            "$RUNNER_TEMP/crane/crane" digest "$image:$RELEASE_VERSION" | grep -Fx "$IMAGE_DIGEST"
+          else
+            "$RUNNER_TEMP/crane/crane" tag "$image@$IMAGE_DIGEST" "$RELEASE_VERSION"
+          fi
+          "$RUNNER_TEMP/crane/crane" digest "$image:$RELEASE_VERSION" | grep -Fx "$IMAGE_DIGEST"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        id: upload
+        with:
+          name: release-container-metadata
+          path: ${{ runner.temp }}/container-metadata/*
+          if-no-files-found: error
+          retention-days: 14
