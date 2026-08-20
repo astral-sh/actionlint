@@ -40,6 +40,7 @@ jobs:
         if: runner.os == 'Linux'
         with:
           version: '0.12.5'
+          checksum: 68a509da24b06b4223a1c0175fb5eb5bc79342b76cbeff0cfe51ac3f5b17b6b2
           enable-cache: false
           activate-environment: true
       - name: Install external linters
@@ -106,6 +107,7 @@ jobs:
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: '0.12.5'
+          checksum: 68a509da24b06b4223a1c0175fb5eb5bc79342b76cbeff0cfe51ac3f5b17b6b2
           enable-cache: false
           activate-environment: true
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
@@ -139,4 +141,9 @@ jobs:
       - run: govulncheck ./...
       - run: go run ./scripts/check-checks -quiet ./docs/checks.md
       - run: shellcheck ./scripts/*.bash ./playground/*.bash
-      - run: node ./scripts/generate-actionlint-matcher/test.mjs
+      - name: Check problem matcher
+        run: |
+          make ./scripts/generate-actionlint-matcher/test/* SKIP_GO_GENERATE=true
+          node ./scripts/generate-actionlint-matcher/test.mjs
+          node ./scripts/generate-actionlint-matcher/main.mjs .github/actionlint-matcher.json
+          git diff --exit-code -- .github/actionlint-matcher.json
