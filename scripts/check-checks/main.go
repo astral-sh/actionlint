@@ -23,7 +23,7 @@ func Actionlint(src []byte) ([]byte, error) {
 	opts := &actionlint.LinterOptions{
 		StdinFileName: "test.yaml",
 		Shellcheck:    "shellcheck",
-		Pyflakes:      "pyflakes",
+		Ruff:          "ruff",
 		Color:         actionlint.ColorOptionKindNever,
 	}
 

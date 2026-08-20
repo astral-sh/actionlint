@@ -4,7 +4,8 @@ version = "0.0.0"
 requires-python = ">=3.12"
 
 [dependency-groups]
-dev = ["pyflakes==3.4.0"]
+# Keep Pyflakes installed for the legacy integration's compatibility tests.
+dev = ["pyflakes==3.4.0", "ruff==0.16.2"]
 
 [tool.uv]
 package = false

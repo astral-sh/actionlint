@@ -17,7 +17,7 @@ List of checks:
 - [Contextual typing for `needs` object](#check-contextual-needs-object)
 - [Strict type checks for comparison operators](#check-comparison-types)
 - [shellcheck integration for `run:`](#check-shellcheck-integ)
-- [pyflakes integration for `run:`](#check-pyflakes-integ)
+- [Ruff integration for `run:`](#check-ruff-integ)
 - [Script injection by potentially untrusted inputs](#untrusted-inputs)
 - [Job dependencies validation](#check-job-deps)
 - [Parallel steps](#check-parallel-step-refs)
@@ -963,7 +963,8 @@ On GitHub Actions:
 ```
 
 <a id="check-pyflakes-integ"></a>
-## [pyflakes][] integration for `run:`
+<a id="check-ruff-integ"></a>
+## [Ruff][] integration for `run:`
 
 Example input:
 
@@ -998,15 +999,15 @@ jobs:
 Output:
 
 ```
-test.yaml:10:9: pyflakes reported issue in this script: 1:7: undefined name 'hello' [pyflakes]
+test.yaml:10:9: Ruff reported issue in this script: 1:7: F821 Undefined name `hello` [ruff]
    |
 10 |       - run: print(hello)
    |         ^~~~
-test.yaml:19:9: pyflakes reported issue in this script: 2:5: import 'sys' from line 1 shadowed by loop variable [pyflakes]
+test.yaml:19:9: Ruff reported issue in this script: 2:5: F402 Import `sys` from line 1 shadowed by loop variable [ruff]
    |
 19 |       - run: |
    |         ^~~~
-test.yaml:23:9: pyflakes reported issue in this script: 1:1: 'time.sleep' imported but unused [pyflakes]
+test.yaml:23:9: Ruff reported issue in this script: 1:18: F401 `time.sleep` imported but unused [ruff]
    |
 23 |       - run: |
    |         ^~~~
@@ -1016,18 +1017,22 @@ test.yaml:23:9: pyflakes reported issue in this script: 1:1: 'time.sleep' import
 
 Python script can be written in `run:` when `shell: python` is configured.
 
-[pyflakes][] is a famous linter for Python. It is suitable for linting small code like scripts at `run:` since it focuses
-on finding mistakes (not a code style issue) and tries to make false positives as minimal as possible. Install pyflakes
-by `pip install pyflakes`.
+[Ruff][] checks embedded Python scripts using its Pyflakes (`F`) rules and syntax checks, without enforcing code style.
+Install Ruff 0.16.2 or newer with `uv tool install ruff`. The integration targets Python 3.14 so it recognizes current
+Python built-ins independently of the Python version installed on the machine running actionlint. It does not infer the
+interpreter version selected by each workflow.
 
-actionlint runs pyflakes for scripts at `run:` steps in a workflow and reports errors found by pyflakes. actionlint detects
-Python scripts in a workflow by checking `shell: python` at each step and `defaults:` configurations at workflows and jobs.
+actionlint runs Ruff for scripts at `run:` steps in a workflow and reports the rule code, message, and position within the
+script. It detects Python scripts by checking `shell: python` at each step and `defaults:` configurations at workflows and jobs.
 
-By default, actionlint checks if `pyflakes` command exists in your system and uses it when found. The `-pyflakes` option
-of `actionlint` command allows to specify the executable path of pyflakes. Setting empty string by `pyflakes=` disables
-pyflakes integration explicitly.
+By default, actionlint checks if the `ruff` command exists and uses it when found. The `-ruff` option specifies another
+executable, and `-ruff=` disables the integration. Ruff runs in isolated mode, so repository configuration and inline
+`noqa` comments cannot silently suppress these workflow checks. No fixes are applied.
 
-Since both `${{ }}` expression syntax is invalid as Python, remaining `${{ }}` might confuse pyflakes. To avoid it,
+The older [Pyflakes][] integration remains available explicitly with `-ruff= -pyflakes=pyflakes`, and its Go API is
+unchanged. Enabling both integrations can report the same issue twice.
+
+Since `${{ }}` expression syntax is invalid Python, remaining `${{ }}` might confuse the Python linter. To avoid it,
 actionlint replaces `${{ }}` with underscores. For example `print('${{ matrix.os }}')` is replaced with
 `print('________________')`.
 
@@ -3243,6 +3248,7 @@ test.yaml:9:14: could not parse as YAML: unknown anchor 'credentials' referenced
 [SC2043]: https://github.com/koalaman/shellcheck/wiki/SC2043
 [shellcheck-env-var]: https://github.com/koalaman/shellcheck/wiki/Integration#environment-variables
 [pyflakes]: https://github.com/PyCQA/pyflakes
+[Ruff]: https://docs.astral.sh/ruff/
 [expr-doc]: https://docs.github.com/en/actions/learn-github-actions/expressions
 [contexts-doc]: https://docs.github.com/en/actions/learn-github-actions/contexts
 [funcs-doc]: https://docs.github.com/en/actions/learn-github-actions/expressions#functions

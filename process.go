@@ -19,6 +19,7 @@ type cmdExecution struct {
 	args          []string
 	stdin         string
 	combineOutput bool
+	maxExitCode   int // Zero preserves the legacy any-nonzero-with-output behavior.
 }
 
 func (e *cmdExecution) run() ([]byte, error) {
@@ -49,6 +50,9 @@ func (e *cmdExecution) run() ([]byte, error) {
 
 			if code < 0 {
 				return nil, fmt.Errorf("%s was terminated. stderr: %q", e.cmd, stderr)
+			}
+			if e.maxExitCode > 0 && code > e.maxExitCode {
+				return nil, fmt.Errorf("%s exited with status %d. stderr: %q", e.cmd, code, stderr)
 			}
 
 			if len(stdout) == 0 {
@@ -146,6 +150,7 @@ type externalCommand struct {
 	exe           string
 	args          []string
 	combineOutput bool
+	maxExitCode   int
 }
 
 // run runs the command with given arguments and stdin. The callback function is called after the
@@ -158,7 +163,7 @@ func (cmd *externalCommand) run(args []string, stdin string, callback func([]byt
 		allArgs = append(allArgs, args...)
 		args = allArgs
 	}
-	exec := &cmdExecution{cmd.exe, args, stdin, cmd.combineOutput}
+	exec := &cmdExecution{cmd.exe, args, stdin, cmd.combineOutput, cmd.maxExitCode}
 	cmd.proc.run(&cmd.eg, exec, callback)
 }
 

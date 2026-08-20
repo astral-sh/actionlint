@@ -3,48 +3,36 @@ package actionlint
 import (
 	"bytes"
 	"fmt"
-	"strings"
-	"sync"
 )
-
-type shellIsPythonKind int
-
-const (
-	shellIsPythonKindUnspecified shellIsPythonKind = iota
-	shellIsPythonKindPython
-	shellIsPythonKindNotPython
-)
-
-func getShellIsPythonKind(shell *String) shellIsPythonKind {
-	if shell == nil {
-		return shellIsPythonKindUnspecified
-	}
-	if shell.Value == "python" || strings.HasPrefix(shell.Value, "python ") {
-		return shellIsPythonKindPython
-	}
-	return shellIsPythonKindNotPython
-}
 
 // RulePyflakes is a rule to check Python scripts at 'run:' using pyflakes.
 // https://github.com/PyCQA/pyflakes
 type RulePyflakes struct {
 	RuleBase
-	cmd                   *externalCommand
-	workflowShellIsPython shellIsPythonKind
-	jobShellIsPython      shellIsPythonKind
-	mu                    sync.Mutex
+	pythonScriptRule
 }
 
 func newRulePyflakes(cmd *externalCommand) *RulePyflakes {
 	return &RulePyflakes{
-		RuleBase: RuleBase{
-			name: "pyflakes",
-			desc: "Checks for Python script when \"shell: python\" is configured using Pyflakes",
-		},
-		cmd:                   cmd,
-		workflowShellIsPython: shellIsPythonKindUnspecified,
-		jobShellIsPython:      shellIsPythonKindUnspecified,
+		RuleBase:         NewRuleBase("pyflakes", "Checks for Python script when \"shell: python\" is configured using Pyflakes"),
+		pythonScriptRule: pythonScriptRule{cmd: cmd},
 	}
+}
+
+// VisitJobPre applies the job's default shell.
+func (rule *RulePyflakes) VisitJobPre(n *Job) error { return rule.pythonScriptRule.VisitJobPre(n) }
+
+// VisitJobPost resets the job's default shell.
+func (rule *RulePyflakes) VisitJobPost(n *Job) error { return rule.pythonScriptRule.VisitJobPost(n) }
+
+// VisitWorkflowPre applies the workflow's default shell.
+func (rule *RulePyflakes) VisitWorkflowPre(n *Workflow) error {
+	return rule.pythonScriptRule.VisitWorkflowPre(n)
+}
+
+// VisitWorkflowPost waits for pending Python checks.
+func (rule *RulePyflakes) VisitWorkflowPost(n *Workflow) error {
+	return rule.pythonScriptRule.VisitWorkflowPost(n)
 }
 
 // NewRulePyflakes creates new RulePyflakes instance. Parameter executable can be command name
@@ -57,34 +45,6 @@ func NewRulePyflakes(executable string, proc *concurrentProcess) (*RulePyflakes,
 		return nil, err
 	}
 	return newRulePyflakes(cmd), nil
-}
-
-// VisitJobPre is callback when visiting Job node before visiting its children.
-func (rule *RulePyflakes) VisitJobPre(n *Job) error {
-	if n.Defaults != nil && n.Defaults.Run != nil {
-		rule.jobShellIsPython = getShellIsPythonKind(n.Defaults.Run.Shell)
-	}
-	return nil
-}
-
-// VisitJobPost is callback when visiting Job node after visiting its children.
-func (rule *RulePyflakes) VisitJobPost(n *Job) error {
-	rule.jobShellIsPython = shellIsPythonKindUnspecified // reset
-	return nil
-}
-
-// VisitWorkflowPre is callback when visiting Workflow node before visiting its children.
-func (rule *RulePyflakes) VisitWorkflowPre(n *Workflow) error {
-	if n.Defaults != nil && n.Defaults.Run != nil {
-		rule.workflowShellIsPython = getShellIsPythonKind(n.Defaults.Run.Shell)
-	}
-	return nil
-}
-
-// VisitWorkflowPost is callback when visiting Workflow node after visiting its children.
-func (rule *RulePyflakes) VisitWorkflowPost(n *Workflow) error {
-	rule.workflowShellIsPython = shellIsPythonKindUnspecified // reset
-	return rule.cmd.wait()                                    // Wait until all processes running for this rule
 }
 
 // VisitStep is callback when visiting Step node.
@@ -100,18 +60,6 @@ func (rule *RulePyflakes) VisitStep(n *Step) error {
 
 	rule.runPyflakes(run.Run.Value, run.RunPos)
 	return nil
-}
-
-func (rule *RulePyflakes) isPythonShell(r *ExecRun) bool {
-	if k := getShellIsPythonKind(r.Shell); k != shellIsPythonKindUnspecified {
-		return k == shellIsPythonKindPython
-	}
-
-	if rule.jobShellIsPython != shellIsPythonKindUnspecified {
-		return rule.jobShellIsPython == shellIsPythonKindPython
-	}
-
-	return rule.workflowShellIsPython == shellIsPythonKindPython
 }
 
 func (rule *RulePyflakes) runPyflakes(src string, pos *Pos) {

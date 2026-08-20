@@ -21,7 +21,7 @@ The [upstream playground][playground] remains available.
   type mismatches, ...
 - **Actions usage check** to check that inputs at `with:` and outputs in `steps.{id}.outputs` are correct
 - **Reusable workflow check** to check inputs/outputs/secrets of reusable workflows and workflow calls
-- **[shellcheck][] and [pyflakes][] integrations** for scripts at `run:`
+- **[shellcheck][] and [Ruff][] integrations** for scripts at `run:`
 - **Security checks**; [script injection][script-injection-doc] by untrusted inputs, hard-coded credentials
 - **Other several useful checks**; [glob syntax][filter-pattern-doc] validation, dependencies check for `needs:`,
   runner label validation, cron syntax validation, ...
@@ -142,7 +142,7 @@ actionlint is distributed under [the MIT license](./LICENSE.txt).
 [upstream]: https://github.com/rhysd/actionlint
 [playground]: https://rhysd.github.io/actionlint/
 [shellcheck]: https://github.com/koalaman/shellcheck
-[pyflakes]: https://github.com/PyCQA/pyflakes
+[Ruff]: https://docs.astral.sh/ruff/
 [syntax-doc]: https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
 [filter-pattern-doc]: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#filter-pattern-cheat-sheet
 [script-injection-doc]: https://docs.github.com/en/actions/reference/security/secure-use#good-practices-for-mitigating-script-injection-attacks
