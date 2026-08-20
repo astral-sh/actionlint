@@ -36,6 +36,12 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
           cache: false
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        if: runner.os == 'Linux'
+        with:
+          version: '0.12.5'
+          enable-cache: false
+          activate-environment: true
       - name: Install external linters
         if: runner.os == 'Linux'
         run: |
@@ -47,10 +53,8 @@ jobs:
             'Acquire::https::Timeout "10";' \
             | sudo tee /etc/apt/apt.conf.d/80-retries > /dev/null
           sudo apt-get update
-          sudo apt-get install -y shellcheck python3-venv
-          python3 -m venv "$RUNNER_TEMP/linters"
-          "$RUNNER_TEMP/linters/bin/pip" install --only-binary=:all: pyflakes==3.4.0
-          echo "$RUNNER_TEMP/linters/bin" >> "$GITHUB_PATH"
+          sudo apt-get install -y shellcheck
+          uv sync --locked --no-build
       - run: go mod verify
       - run: go test -race ./...
       - name: Build without CGO
@@ -99,6 +103,11 @@ jobs:
         with:
           go-version: '1.26.6'
           cache: false
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: '0.12.5'
+          enable-cache: false
+          activate-environment: true
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '24.19.0'
@@ -113,10 +122,8 @@ jobs:
             'Acquire::https::Timeout "10";' \
             | sudo tee /etc/apt/apt.conf.d/80-retries > /dev/null
           sudo apt-get update
-          sudo apt-get install -y shellcheck python3-venv
-          python3 -m venv "$RUNNER_TEMP/linters"
-          "$RUNNER_TEMP/linters/bin/pip" install --only-binary=:all: pyflakes==3.4.0
-          echo "$RUNNER_TEMP/linters/bin" >> "$GITHUB_PATH"
+          sudo apt-get install -y shellcheck
+          uv sync --locked --no-build
           go install honnef.co/go/tools/cmd/staticcheck@v0.7.0
           go install golang.org/x/vuln/cmd/govulncheck@v1.7.0
       - name: Check formatting
