@@ -9,14 +9,9 @@ actionlint
 
 This repository is a fork of [`rhysd/actionlint`][upstream] intended for use in
 [Astral's](https://astral.sh) continuous integration. We maintain focused compatibility updates for
-GitHub Actions while following upstream development.
+GitHub Actions.
 
-The downstream work is informed by upstream pull requests and
-[`kjanat/actionlint`](https://github.com/kjanat/actionlint). Individual changes retain references to
-their original proposals and contributors. See the [commit history][history] for the changes in this
-fork.
-
-The [upstream playground][playground] and [upstream releases][upstream-releases] remain available.
+The [upstream playground][playground] remains available.
 
 ## Features
 
@@ -98,13 +93,11 @@ test.yaml:22:17: receiver of object dereference "permissions" must be type of ob
 
 ## Quick start
 
-This fork does not publish releases yet. Build it from a checkout with Go:
+For prebuilt binaries, see [Astral's releases][releases]. You can also build from a checkout with Go:
 
 ```sh
 go build ./cmd/actionlint
 ```
-
-See [upstream's installation documentation][upstream-install] to install the upstream release.
 
 Basically all you need to do is run the `actionlint` command in your repository. actionlint automatically detects workflows and
 checks errors. actionlint focuses on finding out mistakes. It tries to catch errors as much as possible and make false positives
@@ -147,15 +140,13 @@ actionlint is distributed under [the MIT license](./LICENSE.txt).
 [apidoc]: https://pkg.go.dev/github.com/rhysd/actionlint
 [repo]: https://github.com/astral-sh/actionlint
 [upstream]: https://github.com/rhysd/actionlint
-[history]: https://github.com/astral-sh/actionlint/commits/main/
 [playground]: https://rhysd.github.io/actionlint/
 [shellcheck]: https://github.com/koalaman/shellcheck
 [pyflakes]: https://github.com/PyCQA/pyflakes
 [syntax-doc]: https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions
 [filter-pattern-doc]: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#filter-pattern-cheat-sheet
 [script-injection-doc]: https://docs.github.com/en/actions/reference/security/secure-use#good-practices-for-mitigating-script-injection-attacks
-[upstream-releases]: https://github.com/rhysd/actionlint/releases
-[upstream-install]: https://github.com/rhysd/actionlint/blob/v1.7.12/docs/install.md
+[releases]: https://github.com/astral-sh/actionlint/releases
 [checks]: ./docs/checks.md
 [install]: ./docs/install.md
 [usage]: ./docs/usage.md
