@@ -5,6 +5,7 @@ jobs:
   unit-tests:
     name: Unit tests
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, windows-latest, macos-26-intel, windows-11-arm]
         go: ['1.25', '1.26']
@@ -28,9 +29,12 @@ jobs:
           shellcheck --version
           pyflakes --version
         if: ${{ runner.os == 'Linux' }}
-      - name: Install dependencies on Windows
+      - name: Install ShellCheck on Windows
+        # The Windows ARM runner does not provide winget. Its Go and Python tests still run.
+        if: ${{ runner.os == 'Windows' && matrix.os != 'windows-11-arm' }}
+        run: winget install --id koalaman.shellcheck --disable-interactivity --accept-package-agreements --accept-source-agreements
+      - name: Install Python dependencies on Windows
         run: |
-          winget install --id koalaman.shellcheck --disable-interactivity --accept-package-agreements --accept-source-agreements
           pip install pyflakes
           pyflakes --version
         if: ${{ runner.os == 'Windows' }}
