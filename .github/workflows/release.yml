@@ -1,0 +1,181 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag, or dry-run
+        required: true
+        default: dry-run
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+env:
+  GOTOOLCHAIN: local
+  ACTIONS_CACHE_MODE: none
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.plan.outputs.version }}
+      publishing: ${{ steps.plan.outputs.publishing }}
+    steps:
+      - name: Validate release request
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_ENABLED: ${{ vars.RELEASE_ENABLED }}
+        run: |
+          set -euo pipefail
+          if [[ "$RELEASE_TAG" == dry-run ]]; then
+            echo "version=0.0.0-dev.g$GITHUB_SHA" >> "$GITHUB_OUTPUT"
+            echo 'publishing=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ "$GITHUB_REPOSITORY" != astral-sh/actionlint || "$GITHUB_REF" != refs/heads/main || "$RELEASE_ENABLED" != true ]]; then
+            echo 'Publishing requires the canonical main branch and reviewed release enrollment.' >&2
+            exit 1
+          fi
+          if [[ ! "$RELEASE_TAG" =~ ^v1\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]]; then
+            echo 'Expected a v1.x.y release tag, optionally with a prerelease suffix.' >&2
+            exit 1
+          fi
+          # GraphQL, not the shell, expands these variables.
+          # shellcheck disable=SC2016
+          gh api graphql -f query='query($tag: String!, $ref: String!) { repository(owner: "astral-sh", name: "actionlint") { release(tagName: $tag) { id } ref(qualifiedName: $ref) { id } } }' \
+            -f tag="$RELEASE_TAG" -f ref="refs/tags/$RELEASE_TAG" \
+            --jq '.data.repository | .release == null and .ref == null' | grep -qx true
+          echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
+          echo 'publishing=true' >> "$GITHUB_OUTPUT"
+
+  build-release-binaries:
+    needs: plan
+    uses: ./.github/workflows/build-release-binaries.yml
+    permissions:
+      contents: read
+    with:
+      version: ${{ needs.plan.outputs.version }}
+
+  release-gate:
+    # The release-environment-gate app relies on this exact job name.
+    name: release-gate
+    needs: [plan, build-release-binaries]
+    if: needs.plan.outputs.publishing == 'true'
+    runs-on: ubuntu-24.04
+    environment:
+      name: release-gate
+    steps:
+      - run: echo 'Release approved'
+
+  attest:
+    needs: [plan, build-release-binaries, release-gate]
+    runs-on: ubuntu-24.04
+    environment:
+      name: release
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.build-release-binaries.outputs.artifact-id }}
+          merge-multiple: true
+          path: ${{ runner.temp }}/dist
+      - name: Verify release artifacts
+        env:
+          RELEASE_VERSION: ${{ needs.plan.outputs.version }}
+        run: bash ./scripts/check-release.bash "$RELEASE_VERSION" "$RUNNER_TEMP/dist"
+      - uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8 # v3.1.0
+        id: provenance
+        with:
+          subject-path: ${{ runner.temp }}/dist/*
+      - name: Preserve verification bundle
+        env:
+          BUNDLE_PATH: ${{ steps.provenance.outputs.bundle-path }}
+        run: cp "$BUNDLE_PATH" "$RUNNER_TEMP/actionlint-provenance.json"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-provenance
+          path: ${{ runner.temp }}/actionlint-provenance.json
+          if-no-files-found: error
+          retention-days: 14
+
+  publish-github:
+    # A completed release deployment is required by the tag-creation ruleset.
+    needs: [plan, build-release-binaries, attest]
+    runs-on: ubuntu-24.04
+    environment:
+      name: release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.build-release-binaries.outputs.artifact-id }}
+          merge-multiple: true
+          path: ${{ runner.temp }}/dist
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-provenance
+          path: ${{ runner.temp }}/provenance
+      - name: Verify signing identity and source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_COMMIT: ${{ github.sha }}
+          RELEASE_VERSION: ${{ needs.plan.outputs.version }}
+        run: |
+          set -euo pipefail
+          for artifact in "$RUNNER_TEMP/dist/"*; do
+            gh attestation verify "$artifact" --repo astral-sh/actionlint \
+              --bundle "$RUNNER_TEMP/provenance/actionlint-provenance.json" \
+              --signer-workflow astral-sh/actionlint/.github/workflows/release.yml \
+              --source-ref refs/heads/main --source-digest "$RELEASE_COMMIT" \
+              --signer-digest "$RELEASE_COMMIT" --deny-self-hosted-runners
+          done
+          (cd "$RUNNER_TEMP/dist" && sha256sum --strict --check "actionlint_${RELEASE_VERSION}_checksums.txt")
+      - name: Publish immutable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_VERSION: ${{ needs.plan.outputs.version }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          cp "$RUNNER_TEMP/provenance/actionlint-provenance.json" "$RUNNER_TEMP/actionlint_${RELEASE_VERSION}_attestation.json"
+          # The backticks are literal Markdown.
+          # shellcheck disable=SC2016
+          printf 'Astral actionlint built from `%s`.\n\nSee [release verification instructions](https://github.com/astral-sh/actionlint/blob/%s/docs/releasing.md#verify-a-release).\n' \
+            "$RELEASE_COMMIT" "$RELEASE_COMMIT" > "$RUNNER_TEMP/release-notes.md"
+          flags=()
+          if [[ "$RELEASE_VERSION" == *-* ]]; then flags+=(--prerelease); fi
+          # Creating the ref explicitly fails if another publisher claimed the tag.
+          gh api --method POST repos/astral-sh/actionlint/git/refs \
+            -f ref="refs/tags/$RELEASE_TAG" -f sha="$RELEASE_COMMIT" --jq .object.sha | grep -qx "$RELEASE_COMMIT"
+          assets=("$RUNNER_TEMP/dist/"* "$RUNNER_TEMP/actionlint_${RELEASE_VERSION}_attestation.json")
+          gh release create "$RELEASE_TAG" --repo astral-sh/actionlint --target "$RELEASE_COMMIT" \
+            --verify-tag --draft --title "$RELEASE_TAG" --notes-file "$RUNNER_TEMP/release-notes.md" "${flags[@]}" "${assets[@]}"
+          gh api "repos/astral-sh/actionlint/releases/tags/$RELEASE_TAG" > "$RUNNER_TEMP/draft-release.json"
+          jq -e --arg tag "$RELEASE_TAG" --arg sha "$RELEASE_COMMIT" --argjson count "${#assets[@]}" \
+            '.draft and .tag_name == $tag and .target_commitish == $sha and (.assets | length) == $count' "$RUNNER_TEMP/draft-release.json"
+          for artifact in "${assets[@]}"; do
+            digest=$(sha256sum "$artifact" | cut -d ' ' -f 1)
+            jq -e --arg name "$(basename "$artifact")" --arg digest "sha256:$digest" \
+              'any(.assets[]; .name == $name and .digest == $digest and .state == "uploaded")' "$RUNNER_TEMP/draft-release.json"
+          done
+          gh release edit "$RELEASE_TAG" --repo astral-sh/actionlint --draft=false
+          gh release verify "$RELEASE_TAG" --repo astral-sh/actionlint
+          gh api "repos/astral-sh/actionlint/releases/tags/$RELEASE_TAG" --jq .immutable | grep -qx true
