@@ -69,10 +69,6 @@ type LinterOptions struct {
 	Shellcheck string
 	// Ruff is the command name or path for Ruff. An empty value disables Ruff.
 	Ruff string
-	// Pyflakes is executable for running pyflakes external command. It can be command name like "pyflakes"
-	// or file path like "/path/to/pyflakes", "path/to/pyflakes". When this value is empty, pyflakes
-	// won't run to check scripts in workflow file.
-	Pyflakes string
 	// IgnorePatterns is list of regular expression to filter errors. The pattern is applied to error
 	// messages. When an error is matched, the error is ignored.
 	IgnorePatterns []string
@@ -105,7 +101,6 @@ type Linter struct {
 	oneline        bool
 	shellcheck     string
 	ruff           string
-	pyflakes       string
 	ignorePats     IgnorePatterns
 	stdin          string
 	defaultConfig  *Config
@@ -190,7 +185,6 @@ func NewLinter(out io.Writer, opts *LinterOptions) (*Linter, error) {
 		opts.Oneline,
 		opts.Shellcheck,
 		opts.Ruff,
-		opts.Pyflakes,
 		ignore,
 		stdin,
 		cfg,
@@ -595,16 +589,6 @@ func (l *Linter) check(
 			}
 		} else {
 			l.log("Rule \"ruff\" was disabled since ruff command name was empty")
-		}
-		if l.pyflakes != "" {
-			r, err := NewRulePyflakes(l.pyflakes, proc)
-			if err == nil {
-				rules = append(rules, r)
-			} else {
-				l.log("Rule \"pyflakes\" was disabled:", err)
-			}
-		} else {
-			l.log("Rule \"pyflakes\" was disabled since pyflakes command name was empty")
 		}
 		if l.onRulesCreated != nil {
 			rules = l.onRulesCreated(rules)

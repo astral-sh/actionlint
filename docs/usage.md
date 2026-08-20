@@ -34,12 +34,12 @@ The regular expression syntax is the same as [RE2][re2].
 actionlint -ignore 'label ".+" is unknown' -ignore '".+" is potentially untrusted'
 ```
 
-`-shellcheck`, `-ruff`, and `-pyflakes` specify executable paths. Setting an empty string disables the corresponding rule.
-Ruff is the default Python checker; Pyflakes is available as an opt-in alternative. Disabling external linters can make actionlint faster because these integrations spawn many
+`-shellcheck` and `-ruff` specify executable paths. Setting an empty string disables the corresponding rule.
+Disabling external linters can make actionlint faster because these integrations spawn many
 processes.
 
 ```sh
-actionlint -shellcheck= -ruff= -pyflakes=
+actionlint -shellcheck= -ruff=
 ```
 
 <a id="format"></a>
@@ -267,7 +267,7 @@ table moves a cursor to position of the error in the code editor.
 ## [Docker][docker] image
 
 [Official Docker image][docker-image] is available. The image contains `actionlint` executable and all dependencies (shellcheck
-and pyflakes).
+and Ruff).
 
 Available tags are:
 

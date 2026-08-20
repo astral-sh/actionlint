@@ -1,0 +1,3 @@
+test.yaml:10:9: Ruff reported issue in this script: 1:7: F821 Undefined name `hello` [ruff]
+test.yaml:19:9: Ruff reported issue in this script: 2:5: F402 Import `sys` from line 1 shadowed by loop variable [ruff]
+test.yaml:23:9: Ruff reported issue in this script: 1:18: F401 `time.sleep` imported but unused [ruff]

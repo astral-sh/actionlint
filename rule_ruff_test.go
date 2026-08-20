@@ -143,20 +143,17 @@ func TestCommandRuffIntegration(t *testing.T) {
 			if status != tc.status || (tc.want != "" && !strings.Contains(out.String(), tc.want)) {
 				t.Fatalf("status %d, output %s; want status %d and %q", status, &out, tc.status, tc.want)
 			}
-			if strings.Contains(out.String(), "[pyflakes]") {
-				t.Fatal("Pyflakes also ran by default")
-			}
 		})
 	}
 }
 
-func TestRuleRuffExistingPythonFixtures(t *testing.T) {
+func TestRuleRuffPythonFixtures(t *testing.T) {
 	ruff, err := execabs.LookPath("ruff")
 	if err != nil {
 		t.Skip("Ruff is not installed")
 	}
 	for _, kind := range []string{"ok", "err"} {
-		paths, err := filepath.Glob(filepath.Join("testdata", kind, "pyflakes*.yaml"))
+		paths, err := filepath.Glob(filepath.Join("testdata", kind, "ruff*.yaml"))
 		if err != nil || len(paths) == 0 {
 			t.Fatalf("fixtures for %s: %v, %v", kind, paths, err)
 		}
@@ -180,5 +177,84 @@ func TestRuleRuffExistingPythonFixtures(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestRuleRuffDetectPythonShell(t *testing.T) {
+	tests := []struct {
+		what     string
+		isPython bool
+		workflow string // Shell name set at 'defaults' in Workflow node
+		job      string // Shell name set at 'defaults' in Job node
+		step     string // Shell name set at 'shell' in Step node
+	}{
+		{
+			what:     "no default shell",
+			isPython: false,
+		},
+		{
+			what:     "workflow default",
+			isPython: true,
+			workflow: "python",
+		},
+		{
+			what:     "job default",
+			isPython: true,
+			job:      "python",
+		},
+		{
+			what:     "step shell",
+			isPython: true,
+			step:     "python",
+		},
+		{
+			what:     "custom shell",
+			isPython: true,
+			workflow: "python {0}",
+		},
+		{
+			what:     "other shell",
+			isPython: false,
+			workflow: "pwsh",
+		},
+		{
+			what:     "other custom shell",
+			isPython: false,
+			workflow: "bash -e {0}",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.what, func(t *testing.T) {
+			r := newRuleRuff(&externalCommand{})
+
+			w := &Workflow{}
+			if tc.workflow != "" {
+				w.Defaults = &Defaults{
+					Run: &DefaultsRun{
+						Shell: &String{Value: tc.workflow},
+					},
+				}
+			}
+			r.VisitWorkflowPre(w)
+
+			j := &Job{}
+			if tc.job != "" {
+				j.Defaults = &Defaults{
+					Run: &DefaultsRun{
+						Shell: &String{Value: tc.job},
+					},
+				}
+			}
+			r.VisitJobPre(j)
+
+			e := &ExecRun{}
+			if tc.step != "" {
+				e.Shell = &String{Value: tc.step}
+			}
+			if have := r.isPythonShell(e); have != tc.isPython {
+				t.Fatalf("Actual isPython=%v but wanted isPython=%v", have, tc.isPython)
+			}
+		})
 	}
 }

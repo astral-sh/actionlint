@@ -75,9 +75,6 @@ with Go template syntax.
   * `-oneline`:
     Use one line per one error. Useful for reading error messages from programs
 
-  * `-pyflakes` <EXECUTABLE>:
-    Command name or file path of the optional "pyflakes" external command. Disabled by default.
-
   * `-ruff` <EXECUTABLE>:
     Command name or file path of "ruff" external command. If empty, Ruff integration will be
     disabled (default "ruff")

@@ -12,17 +12,17 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Install dependencies on macOS
-        run: brew install shellcheck python3 && pip3 install pyflakes
+        run: brew install shellcheck python3 && pip3 install ruff
         if: ${{ matrix.os == 'macos-latest' }}
       - run: ls
       - name: Install dependencies on Linux
-        run: sudo apt install shellcheck && pip install pyflakes
+        run: sudo apt install shellcheck && pip install ruff
         if: ${{ matrix.os == 'ubuntu-latest' }}
       - name: Install dependencies on Windows
-        run: choco install shellcheck && pip install pyflakes
+        run: choco install shellcheck && pip install ruff
         if: ${{ matrix.os == 'windows-latest' }}
       - run: shellcheck --version
-      - run: pyflakes --version
+      - run: ruff --version
       - uses: actions/checkout@v4
       - run: git --version
       - uses: actions/setup-go@v5

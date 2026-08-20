@@ -3,10 +3,10 @@ jobs:
   step-level:
     runs-on: ubuntu-latest
     steps:
-      # Lint check failed. The error is output to stdout (#411)
+      # Lint check failed.
       - run: print(unknown_var)
         shell: python
-      # Syntax check failed. The error is output to stderr (#411)
+      # Syntax check failed.
       - run: print(
         shell: python
       # Check custom shell
