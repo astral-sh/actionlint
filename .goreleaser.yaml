@@ -1,56 +1,72 @@
 version: 2
-
-release:
-  draft: true
-  prerelease: true
-
-before:
-  hooks:
-    - go mod download
+dist: ../actionlint-release-dist
 
 builds:
-  - <<: &build_defaults
-      main: ./cmd/actionlint
-      ldflags: -s -w -X github.com/astral-sh/actionlint.version={{.Version}} -X "github.com/astral-sh/actionlint.installedFrom=installed by downloading from release page"
-      env:
-        - CGO_ENABLED=0
-    id: macos
+  - &build_defaults
+    main: ./cmd/actionlint
+    binary: actionlint
+    flags:
+      - -trimpath
+      - -buildvcs=true
+      - -mod=readonly
+    ldflags:
+      - -s -w -X github.com/astral-sh/actionlint.version={{ .Version }} -X "github.com/astral-sh/actionlint.installedFrom=installed from an Astral release"
+    env:
+      - CGO_ENABLED=0
+      - GOTOOLCHAIN=local
+      - GOWORK=off
+      - GOFLAGS=
+      - GOEXPERIMENT=
+    id: darwin
     goos: [darwin]
     goarch: [amd64, arm64]
+    goamd64: [v1]
+    goarm64: [v8.0]
 
   - <<: *build_defaults
     id: linux
     goos: [linux]
     goarch: [386, arm, amd64, arm64]
+    go386: [sse2]
+    goarm: [6]
+    goamd64: [v1]
+    goarm64: [v8.0]
 
   - <<: *build_defaults
     id: windows
     goos: [windows]
     goarch: [386, amd64, arm64]
+    go386: [sse2]
+    goamd64: [v1]
+    goarm64: [v8.0]
 
   - <<: *build_defaults
     id: freebsd
     goos: [freebsd]
     goarch: [386, amd64]
-
-checksum:
-  name_template: "actionlint_{{.Version}}_checksums.txt"
-  algorithm: sha256
+    go386: [sse2]
+    goamd64: [v1]
 
 archives:
-  - <<: &archives_defaults
-      files:
-        - README.md
-        - LICENSE.txt
-        - docs
-        - man/actionlint.1
-    id: nix
-    ids: [macos, linux, freebsd]
+  - id: release
+    ids: [darwin, linux, windows, freebsd]
+    name_template: "actionlint_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}"
     formats: [tar.gz]
-  - <<: *archives_defaults
-    id: windows
-    ids: [windows]
-    formats: [zip]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - README.md
+      - LICENSE.txt
+      - docs
+      - man/actionlint.1.ronn
+
+checksum:
+  name_template: "actionlint_{{ .Version }}_checksums.txt"
+  algorithm: sha256
+
+release:
+  disable: true
 
 changelog:
   disable: true
