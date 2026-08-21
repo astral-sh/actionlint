@@ -144,10 +144,9 @@ make fuzz FUZZ_FUNC=FuzzParse
 
 ## Make a new release
 
-Astral's release process is not enabled yet. Do not use the inherited version-bump script or publish
-upstream's package identities. A release workflow, verification instructions, and protected release
-environment will be added separately. Until then, consumers should build reviewed, commit-pinned
-source as described in [the installation guide](docs/install.md#astral-fork).
+Maintainers should follow [the Astral release procedure](RELEASING.md). Do not use the inherited
+version-bump script or publish upstream's package identities. Consumers should follow the
+[installation and verification instructions](docs/install.md#astral-fork).
 
 ## How to generate the manual
 

@@ -248,7 +248,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Check workflow files
-        uses: docker://rhysd/actionlint:latest
+        uses: docker://ghcr.io/astral-sh/actionlint@sha256:FULL_REVIEWED_IMAGE_DIGEST
         with:
           args: -color
 ```
@@ -266,37 +266,42 @@ table moves a cursor to position of the error in the code editor.
 <a id="docker"></a>
 ## [Docker][docker] image
 
-[Official Docker image][docker-image] is available. The image contains `actionlint` executable and all dependencies (shellcheck
-and Ruff).
+[Astral release images][docker-image] contain actionlint, ShellCheck, and Ruff for Linux AMD64 and ARM64.
+Images become available with the first Astral release. The legacy opt-in Pyflakes integration is not
+bundled. Before running an image, follow the [container verification instructions](releasing.md#verify-a-container)
+and replace `FULL_REVIEWED_IMAGE_DIGEST` with the approved image index digest.
 
 Available tags are:
 
-- `actionlint:latest`: Latest stable version of actionlint. This image is recommended.
-- `actionlint:{version}`: Specific version of actionlint. (e.g. `actionlint:1.7.12`)
+- `ghcr.io/astral-sh/actionlint:{version}`: A release version without the leading `v`.
+- `ghcr.io/astral-sh/actionlint:latest`: The newest published stable release.
+
+Pin the verified digest in CI; neither tag form is an integrity check.
 
 Just run the image with `docker run`:
 
 ```sh
-docker run --rm rhysd/actionlint:latest -version
+image=ghcr.io/astral-sh/actionlint@sha256:FULL_REVIEWED_IMAGE_DIGEST
+docker run --rm "$image" -version
 ```
 
 To check all workflows in your repository, mount your repository's root directory as a volume and run actionlint in the mounted
 directory. When you are at a root directory of your repository:
 
 ```sh
-docker run --rm -v $(pwd):/repo --workdir /repo rhysd/actionlint:latest -color
+docker run --rm -v "$PWD:/repo:ro" --workdir /repo "$image" -color
 ```
 
 To check a file with actionlint in a Docker container, pass the file content via stdin and use `-` argument:
 
 ```sh
-cat /path/to/workflow.yml | docker run --rm -i rhysd/actionlint:latest -color -
+cat /path/to/workflow.yml | docker run --rm -i "$image" -color -
 ```
 
 Or mount the workflows directory and pass the paths as arguments:
 
 ```sh
-docker run --rm -v /path/to/workflows:/workflows rhysd/actionlint:latest -color /workflows/ci.yml
+docker run --rm -v /path/to/workflows:/workflows:ro "$image" -color /workflows/ci.yml
 ```
 
 ## Using actionlint from Go program
@@ -372,7 +377,9 @@ repos:
       - id: actionlint
 ```
 
-The `actionlint-system` hook is also available. This fork does not publish a Docker image yet.
+The `actionlint-system` hook is also available. To use a container with pre-commit, define a local
+`docker_image` hook whose entry is the [verified Astral image digest](#docker). A repository-provided
+Docker hook will require a concrete digest from the first release.
 
 | Hook ID | Explanation |
 |-|-|
@@ -467,7 +474,7 @@ You can also see actionlint issues inline in VS Code via the [Trunk VS Code exte
 [pre-commit]: https://pre-commit.com
 [go-install]: https://go.dev/doc/install
 [docker]: https://www.docker.com/
-[docker-image]: https://hub.docker.com/r/rhysd/actionlint
+[docker-image]: https://github.com/astral-sh/actionlint/pkgs/container/actionlint
 [vsc-extension]: https://marketplace.visualstudio.com/items?itemName=arahata.linter-actionlint
 [vscode]: https://code.visualstudio.com/
 [emacs-melpa]: https://melpa.org/
