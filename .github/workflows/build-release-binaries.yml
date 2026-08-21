@@ -32,6 +32,7 @@ jobs:
           go-version: '1.26.6'
           cache: false
       - run: go mod download && go mod verify
+      - run: bash ./scripts/test-check-release.bash
       - name: Install pinned GoReleaser
         run: |
           set -euo pipefail
@@ -63,7 +64,7 @@ jobs:
             test -f "$artifact" && test ! -L "$artifact"
             install -m 644 "$artifact" "$RUNNER_TEMP/dist/"
           done
-          (cd "$RUNNER_TEMP/dist" && sha256sum --strict --check "actionlint_${RELEASE_VERSION}_checksums.txt")
+          bash ./scripts/check-release.bash "$RELEASE_VERSION" "$RUNNER_TEMP/dist"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         id: upload
         with:
