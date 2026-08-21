@@ -1731,11 +1731,11 @@ jobs:
 Output:
 
 ```
-test.yaml:7:15: specifying action "actions/checkout" in invalid format because ref is missing. available formats are "{owner}/{repo}@{ref}" or "{owner}/{repo}/{path}@{ref}" [action]
+test.yaml:7:15: specifying action "actions/checkout" in invalid format because ref is missing. available formats are "{owner}/{repo}@{ref}", "{owner}/{repo}/{path}@{ref}", "./{path}", or "$/{path}" [action]
   |
 7 |       - uses: actions/checkout
   |               ^~~~~~~~~~~~~~~~
-test.yaml:9:15: specifying action "checkout@v2" in invalid format because owner is missing. available formats are "{owner}/{repo}@{ref}" or "{owner}/{repo}/{path}@{ref}" [action]
+test.yaml:9:15: specifying action "checkout@v2" in invalid format because owner is missing. available formats are "{owner}/{repo}@{ref}", "{owner}/{repo}/{path}@{ref}", "./{path}", or "$/{path}" [action]
   |
 9 |       - uses: checkout@v2
   |               ^~~~~~~~~~~
@@ -1743,7 +1743,7 @@ test.yaml:11:15: tag of Docker action should not be empty: "docker://image" [act
    |
 11 |       - uses: 'docker://image:'
    |               ^~~~~~~~~~~~~~~~~
-test.yaml:13:15: specifying action ".github/my-actions/do-something" in invalid format because ref is missing. available formats are "{owner}/{repo}@{ref}" or "{owner}/{repo}/{path}@{ref}" [action]
+test.yaml:13:15: specifying action ".github/my-actions/do-something" in invalid format because ref is missing. available formats are "{owner}/{repo}@{ref}", "{owner}/{repo}/{path}@{ref}", "./{path}", or "$/{path}" [action]
    |
 13 |       - uses: .github/my-actions/do-something
    |               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1751,10 +1751,11 @@ test.yaml:13:15: specifying action ".github/my-actions/do-something" in invalid 
 
 [Playground](https://rhysd.github.io/actionlint/#eNpczbEOwyAMBNA9X+EtE0XqyNRfAWIBTbGj2K7Uv69olYXppHsnHVOAw6QuT04SFgBF0ZEAp5G44ZaM1NwrDvuRKB7yXwE4MEEJELM2JvG5Yt7ZdOKrfrzvk6wb5x3P4H3rsWBYJ7+VptWS7x93fWzshDtqbVS+AQAA//+oTjwo)
 
-Action needs to be specified in a format defined in [the document][action-uses-doc]. There are 3 types of actions:
+Action needs to be specified in a format defined in [the document][action-uses-doc]. There are 4 types of actions:
 
 - action hosted on GitHub: `owner/repo/path@ref`
 - local action: `./path/to/my-action`
+- action in the workflow's repository at the running commit: `$/path/to/my-action`
 - Docker action: `docker://image:tag`
 
 actionlint checks values at `uses:` sections follow one of these formats.
@@ -1823,7 +1824,7 @@ test.yaml:13:11: input "additions" is not defined in action "My action" defined 
 
 <!-- Skip playground link -->
 
-When a local action is run in `uses:` of `step:`, actionlint reads `action.yml` file in the local action directory and
+When a local or self-repository action is run in `uses:` of `step:`, actionlint reads `action.yml` from the repository and
 validates inputs at `with:` in the workflow are correct. Missing required inputs and unexpected inputs can be detected.
 
 <a id="check-popular-action-inputs"></a>
@@ -2270,7 +2271,7 @@ test.yaml:6:5: when a reusable workflow is called with "uses", "runs-on" is not 
   |
 6 |     runs-on: ubuntu-latest
   |     ^~~~~~~~
-test.yaml:9:11: reusable workflow call "./.github/workflows/ci.yml@main" at "uses" is not following the format "owner/repo/path/to/workflow.yml@ref" nor "./path/to/workflow.yml". see https://docs.github.com/en/actions/learn-github-actions/reusing-workflows for more details [workflow-call]
+test.yaml:9:11: reusable workflow call "./.github/workflows/ci.yml@main" at "uses" is not following the format "owner/repo/path/to/workflow.yml@ref", "./path/to/workflow.yml", nor "$/path/to/workflow.yml". see https://docs.github.com/en/actions/learn-github-actions/reusing-workflows for more details [workflow-call]
   |
 9 |     uses: ./.github/workflows/ci.yml@main
   |           ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2291,10 +2292,12 @@ For example, `secrets:` is not available when running steps in a normal job. And
 a reusable workflow since the called workflow determines which OS is used. actionlint checks such keys are used correctly
 to call a reusable workflow or to run steps in a normal job.
 
-And the workflow syntax at `uses:` must follow the format `owner/repo/path/to/workflow.yml@ref` as described in
-[the official document][create-reusable-workflow-doc]. actionlint checks if the value follows the format.
+And the workflow syntax at `uses:` must follow the format `owner/repo/path/to/workflow.yml@ref`,
+`./path/to/workflow.yml`, or `$/path/to/workflow.yml` as described in [the official document][create-reusable-workflow-doc].
+actionlint checks if the value follows the format.
 
-actionlint also validates the called workflow file is actually existing when it is a local workflow (starting with `./`).
+actionlint also validates the called workflow file is actually existing when it is local or self-repository referenced
+(starting with `./` or `$/`).
 actionlint reports an error when it does not exist.
 
 ### Check types of `inputs.*` and `secrets.*` in reusable workflow
@@ -2531,7 +2534,7 @@ And reusable workflows must define types of their inputs by `type:` field. Workf
 expressions (`inputs: ${{ ... }}`) to the inputs or secrets. actionlint checks types of values passed to inputs in workflow call.
 When a type of input doesn't match to its definition, actionlint reports an error.
 
-Note that this check only works with local reusable workflow (it starts with `./`).
+Note that this check only works with local or self-repository reusable workflows (starting with `./` or `$/`).
 
 ### Check outputs of workflow call in downstream jobs
 
@@ -2593,7 +2596,7 @@ object types in downstream jobs.
 In the above example, `get-build-info.yaml` has one output `version`. actionlint types the outputs object of workflow call job
 as `{version: string}`. In the downstream job, actionlint can report an error at undefined key `tag` in the object.
 
-Note that this check only works with local reusable workflow (starting with `./`).
+Note that this check only works with local or self-repository reusable workflows (starting with `./` or `$/`).
 
 <a id="id-naming-convention"></a>
 ## ID naming convention

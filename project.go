@@ -53,6 +53,31 @@ func (p *Project) RootDir() string {
 	return p.root
 }
 
+// readFile uses a root-aware operation for repository-relative files instead of
+// checking a path separately from opening it.
+func (p *Project) readFile(name string) ([]byte, error) {
+	root, err := os.OpenRoot(p.root)
+	if err != nil {
+		return nil, err
+	}
+	defer root.Close()
+	data, err := root.ReadFile(name)
+	if e, ok := err.(*os.PathError); ok {
+		// Keep diagnostics in the same form as reading the absolute file path.
+		err = &os.PathError{Op: "open", Path: filepath.Join(p.root, name), Err: e.Err}
+	}
+	return data, err
+}
+
+func (p *Project) statFile(name string) (os.FileInfo, error) {
+	root, err := os.OpenRoot(p.root)
+	if err != nil {
+		return nil, err
+	}
+	defer root.Close()
+	return root.Stat(name)
+}
+
 // WorkflowsDir returns a ".github/workflows" directory path of the GitHub project repository.
 // This method does not check if the directory exists.
 func (p *Project) WorkflowsDir() string {
