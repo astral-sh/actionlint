@@ -134,8 +134,8 @@ See the [contribution guide](./CONTRIBUTING.md) for more details.
 
 actionlint is distributed under [the MIT license](./LICENSE.txt).
 
-[ci-badge]: https://github.com/astral-sh/actionlint/actions/workflows/ci.yaml/badge.svg
-[ci]: https://github.com/astral-sh/actionlint/actions/workflows/ci.yaml
+[ci-badge]: https://github.com/astral-sh/actionlint/actions/workflows/ci.yml/badge.svg
+[ci]: https://github.com/astral-sh/actionlint/actions/workflows/ci.yml
 [apidoc-badge]: https://pkg.go.dev/badge/github.com/astral-sh/actionlint.svg
 [apidoc]: https://pkg.go.dev/github.com/astral-sh/actionlint
 [repo]: https://github.com/astral-sh/actionlint

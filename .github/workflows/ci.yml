@@ -24,8 +24,8 @@ defaults:
     shell: bash
 
 jobs:
-  unit-tests:
-    name: Unit tests (${{ matrix.os }}, Go ${{ matrix.go }})
+  test:
+    name: go test on ${{ matrix.os }} (Go ${{ matrix.go }})
     strategy:
       fail-fast: false
       matrix:
@@ -69,8 +69,7 @@ jobs:
       - name: Check this repository's workflows
         run: ./actionlint -color
 
-  wasm:
-    name: Playground
+  test-playground:
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -97,8 +96,7 @@ jobs:
       - run: npm test
       - run: npm audit --omit=dev
 
-  lint:
-    name: Lint
+  check-lint:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
