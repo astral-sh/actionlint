@@ -18,3 +18,9 @@ jobs:
     uses: ./.github/workflows/build-release-binaries.yml
     with:
       version: 0.0.0-dev.g${{ github.sha }}
+  build-release-container:
+    needs: build-release-binaries
+    uses: ./.github/workflows/build-release-container.yml
+    with:
+      version: 0.0.0-dev.g${{ github.sha }}
+      binaries: ${{ needs.build-release-binaries.outputs.artifact-id }}
