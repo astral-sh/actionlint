@@ -19,7 +19,7 @@ Features:
   not existing property, type mismatches, ...
 - **Actions usage check** to check that inputs at `with:` and outputs in `steps.{id}.outputs` are
   correct
-- **shellcheck and pyflakes integrations** for scripts at `run:`
+- **shellcheck and Ruff integrations** for scripts at `run:`
 - **Security checks**; script injection by untrusted inputs, hard-coded credentials
 - **Other several useful checks**; glob syntax validation, dependencies check for `needs:`, runner
   label validation, cron syntax validation, ...
@@ -76,8 +76,11 @@ with Go template syntax.
     Use one line per one error. Useful for reading error messages from programs
 
   * `-pyflakes` <EXECUTABLE>:
-    Command name or file path of "pyflakes" external command. If empty, pyflakes integration will be
-    disabled (default "pyflakes")
+    Command name or file path of the optional "pyflakes" external command. Disabled by default.
+
+  * `-ruff` <EXECUTABLE>:
+    Command name or file path of "ruff" external command. If empty, Ruff integration will be
+    disabled (default "ruff")
 
   * `-shellcheck` <EXECUTABLE>:
     Command name or file path of "shellcheck" external command. If empty, shellcheck integration will

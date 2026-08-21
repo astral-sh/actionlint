@@ -16,7 +16,7 @@ For making the implementation simple, this script does not support Windows.
 - Go
 - Linux or macOS
 - `shellcheck` command
-- `pyflakes` command
+- `ruff` command
 
 ## Usage
 
