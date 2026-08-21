@@ -33,7 +33,7 @@ jobs:
           cache: false
       - run: go mod download && go mod verify
       - run: bash ./scripts/test-check-release.bash
-      - name: Install pinned GoReleaser
+      - name: Install pinned release tools
         run: |
           set -euo pipefail
           install -d "$RUNNER_TEMP/release-tools"
@@ -45,6 +45,14 @@ jobs:
             "$RUNNER_TEMP/release-tools/goreleaser.tar.gz" | sha256sum --check -
           tar -xOf "$RUNNER_TEMP/release-tools/goreleaser.tar.gz" goreleaser > "$RUNNER_TEMP/release-tools/goreleaser"
           chmod 755 "$RUNNER_TEMP/release-tools/goreleaser"
+          curl --fail --location --proto '=https' --tlsv1.2 \
+            https://github.com/anchore/syft/releases/download/v1.50.0/syft_1.50.0_linux_amd64.tar.gz \
+            --output "$RUNNER_TEMP/release-tools/syft.tar.gz"
+          printf '%s  %s\n' \
+            bf7b29ff57f06da30918266a0e1c2885a8f99784798d1bdb1628886aa015d788 \
+            "$RUNNER_TEMP/release-tools/syft.tar.gz" | sha256sum --check -
+          tar -xOf "$RUNNER_TEMP/release-tools/syft.tar.gz" syft > "$RUNNER_TEMP/release-tools/syft"
+          chmod 755 "$RUNNER_TEMP/release-tools/syft"
       - name: Build and verify release artifacts
         env:
           GORELEASER_CURRENT_TAG: v${{ inputs.version }}

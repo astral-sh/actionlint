@@ -65,6 +65,19 @@ checksum:
   name_template: "actionlint_{{ .Version }}_checksums.txt"
   algorithm: sha256
 
+sboms:
+  - id: release
+    artifacts: archive
+    ids: [release]
+    documents:
+      - "{{ .ArtifactName }}.cdx.json"
+    args:
+      - "$artifact"
+      - --output
+      - "cyclonedx-json@1.6=$document"
+    env:
+      - SYFT_CHECK_FOR_APP_UPDATE=false
+
 release:
   disable: true
 
