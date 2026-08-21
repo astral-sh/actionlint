@@ -1,7 +1,7 @@
 version: 2
 
 release:
-  draft: false
+  draft: true
   prerelease: true
 
 before:
@@ -51,22 +51,6 @@ archives:
     id: windows
     ids: [windows]
     formats: [zip]
-
-homebrew_casks:
-  - name: actionlint
-    directory: Casks
-    binaries: [actionlint]
-    manpages: [man/actionlint.1]
-    homepage: https://github.com/astral-sh/actionlint#readme
-    description: Static checker for GitHub Actions workflow files
-    dependencies:
-      - formula: shellcheck
-    repository:
-      owner: rhysd
-      name: actionlint
-    commit_author:
-      name: 'github-actions[bot]'
-      email: '41898282+github-actions[bot]@users.noreply.github.com'
 
 changelog:
   disable: true
