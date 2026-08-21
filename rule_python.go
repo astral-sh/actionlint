@@ -23,7 +23,7 @@ func getShellIsPythonKind(shell *String) shellIsPythonKind {
 	return shellIsPythonKindNotPython
 }
 
-// pythonScriptRule shares shell selection and process lifetime between Python linters.
+// pythonScriptRule tracks shell selection and process lifetime for Python scripts.
 type pythonScriptRule struct {
 	cmd                   *externalCommand
 	workflowShellIsPython shellIsPythonKind

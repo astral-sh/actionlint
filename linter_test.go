@@ -46,20 +46,20 @@ func TestLinterLintOK(t *testing.T) {
 
 	proj := &Project{root: dir}
 	shellcheck, _ := execabs.LookPath("shellcheck")
-	pyflakes, _ := execabs.LookPath("pyflakes")
+	ruff, _ := execabs.LookPath("ruff")
 
 	for _, f := range fs {
 		t.Run(filepath.Base(f), func(t *testing.T) {
 			if strings.Contains(f, "shellcheck") && shellcheck == "" {
 				t.Skip("skipping", f, "because \"shellcheck\" command does not exist in system")
 			}
-			if strings.Contains(f, "pyflakes") && pyflakes == "" {
-				t.Skip("skipping", f, "because \"pyflakes\" command does not exist in system")
+			if strings.Contains(f, "ruff") && ruff == "" {
+				t.Skip("skipping", f, "because \"ruff\" command does not exist in system")
 			}
 
 			opts := LinterOptions{
 				Shellcheck: shellcheck,
-				Pyflakes:   pyflakes,
+				Ruff:       ruff,
 			}
 
 			linter, err := NewLinter(io.Discard, &opts)
@@ -166,9 +166,9 @@ func TestLinterLintError(t *testing.T) {
 			shellcheck = p
 		}
 
-		pyflakes := ""
-		if p, err := execabs.LookPath("pyflakes"); err == nil {
-			pyflakes = p
+		ruff := ""
+		if p, err := execabs.LookPath("ruff"); err == nil {
+			ruff = p
 		}
 
 		for _, infile := range infiles {
@@ -190,11 +190,11 @@ func TestLinterLintError(t *testing.T) {
 					o.Shellcheck = shellcheck
 				}
 
-				if strings.Contains(testName, "pyflakes") {
-					if pyflakes == "" {
-						t.Skip("skipped because \"pyflakes\" command does not exist in system")
+				if strings.Contains(testName, "ruff") {
+					if ruff == "" {
+						t.Skip("skipped because \"ruff\" command does not exist in system")
 					}
-					o.Pyflakes = pyflakes
+					o.Ruff = ruff
 				}
 
 				l, err := NewLinter(io.Discard, &o)
@@ -221,9 +221,9 @@ func TestLinterLintAllErrorWorkflowsAtOnce(t *testing.T) {
 		t.Skipf("shellcheck is not found: %s", err)
 	}
 
-	pyflakes, err := execabs.LookPath("pyflakes")
+	ruff, err := execabs.LookPath("ruff")
 	if err != nil {
-		t.Skipf("pyflakes is not found: %s", err)
+		t.Skipf("ruff is not found: %s", err)
 	}
 
 	dir, files, err := testFindAllWorkflowsInDir("examples")
@@ -242,7 +242,7 @@ func TestLinterLintAllErrorWorkflowsAtOnce(t *testing.T) {
 
 	o := LinterOptions{
 		Shellcheck: shellcheck,
-		Pyflakes:   pyflakes,
+		Ruff:       ruff,
 	}
 
 	l, err := NewLinter(io.Discard, &o)
@@ -265,7 +265,7 @@ CheckFiles:
 				continue CheckFiles
 			}
 		}
-		if !strings.Contains(f, "pyflakes") && !strings.Contains(f, "shellcheck") {
+		if !strings.Contains(f, "ruff") && !strings.Contains(f, "shellcheck") {
 			t.Errorf("Workflow %q caused no error: %v", f, errs)
 		}
 	}
@@ -825,7 +825,7 @@ func BenchmarkLintWorkflowContent(b *testing.B) {
 	}
 	proj := &Project{root: dir}
 
-	// Measure performance of traversing with checks except for external process rules (shellcheck, pyflakes)
+	// Measure performance of traversing with checks except for external process rules (shellcheck, ruff)
 	// Reading file content is not included in benchmark measurement.
 
 	for _, name := range []string{"minimal", "small", "large"} {
@@ -874,15 +874,15 @@ func BenchmarkExamplesLintFiles(b *testing.B) {
 	if err != nil {
 		b.Skipf("shellcheck is not found: %s", err)
 	}
-	pyflakes, err := execabs.LookPath("pyflakes")
+	ruff, err := execabs.LookPath("ruff")
 	if err != nil {
-		b.Skipf("pyflakes is not found: %s", err)
+		b.Skipf("ruff is not found: %s", err)
 	}
 
 	for i := 0; i < b.N; i++ {
 		opts := LinterOptions{
 			Shellcheck: shellcheck,
-			Pyflakes:   pyflakes,
+			Ruff:       ruff,
 		}
 
 		l, err := NewLinter(io.Discard, &opts)

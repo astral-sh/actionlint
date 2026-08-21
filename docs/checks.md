@@ -962,7 +962,6 @@ On GitHub Actions:
     SHELLCHECK_OPTS: --exclude=SC2129
 ```
 
-<a id="check-pyflakes-integ"></a>
 <a id="check-ruff-integ"></a>
 ## [Ruff][] integration for `run:`
 
@@ -1028,9 +1027,6 @@ script. It detects Python scripts by checking `shell: python` at each step and `
 By default, actionlint checks if the `ruff` command exists and uses it when found. The `-ruff` option specifies another
 executable, and `-ruff=` disables the integration. Ruff runs in isolated mode, so repository configuration and inline
 `noqa` comments cannot silently suppress these workflow checks. No fixes are applied.
-
-The older [Pyflakes][] integration remains available explicitly with `-ruff= -pyflakes=pyflakes`, and its Go API is
-unchanged. Enabling both integrations can report the same issue twice.
 
 Since `${{ }}` expression syntax is invalid Python, remaining `${{ }}` might confuse the Python linter. To avoid it,
 actionlint replaces `${{ }}` with underscores. For example `print('${{ matrix.os }}')` is replaced with
@@ -3247,7 +3243,6 @@ test.yaml:9:14: could not parse as YAML: unknown anchor 'credentials' referenced
 [SC2157]: https://github.com/koalaman/shellcheck/wiki/SC2157
 [SC2043]: https://github.com/koalaman/shellcheck/wiki/SC2043
 [shellcheck-env-var]: https://github.com/koalaman/shellcheck/wiki/Integration#environment-variables
-[pyflakes]: https://github.com/PyCQA/pyflakes
 [Ruff]: https://docs.astral.sh/ruff/
 [expr-doc]: https://docs.github.com/en/actions/learn-github-actions/expressions
 [contexts-doc]: https://docs.github.com/en/actions/learn-github-actions/contexts

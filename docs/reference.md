@@ -14,7 +14,6 @@ This document describes links to resources related to actionlint and GitHub Acti
   - Security: https://docs.github.com/en/actions/reference/security/secure-use
 - CRON syntax: https://pubs.opengroup.org/onlinepubs/9699919799/utilities/crontab.html#tag_20_25_07
 - shellcheck: https://github.com/koalaman/shellcheck
-- pyflakes: https://github.com/PyCQA/pyflakes
 - Ruff: https://docs.astral.sh/ruff/
 - Japanese blog posts
   - GitHub Actions のワークフローをチェックする actionlint をつくった: https://rhysd.hatenablog.com/entry/2021/07/11/214313
