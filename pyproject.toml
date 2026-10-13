@@ -8,3 +8,5 @@ dev = ["ruff==0.16.2"]
 
 [tool.uv]
 package = false
+require-build-hashes = true
+preview-features = ["build-dependency-hashes"]
