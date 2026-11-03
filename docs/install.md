@@ -5,8 +5,10 @@ This document describes how to install [actionlint](../docs).
 
 ## Astral fork
 
-Astral does not publish actionlint releases or container images yet. To install this fork, choose a
-reviewed full commit SHA from this repository and build it with Go:
+For Astral's prebuilt binaries, use the [Astral releases page](https://github.com/astral-sh/actionlint/releases)
+and follow the [release verification instructions](./releasing.md#verify-a-release) before extracting
+or running an archive. Astral container images and package-manager distributions are not published by
+this release workflow. To build this fork yourself, choose a reviewed full commit SHA:
 
 ```sh
 go install github.com/astral-sh/actionlint/cmd/actionlint@<full-commit-sha>
