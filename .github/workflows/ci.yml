@@ -30,7 +30,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-24.04, macos-15, windows-2022]
-        go: ['1.25.14', '1.26.10']
+        go: ['1.26.10']
     runs-on: ${{ matrix.os }}
     steps:
       - if: runner.os == 'macOS'
