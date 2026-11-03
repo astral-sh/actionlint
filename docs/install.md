@@ -7,8 +7,8 @@ This document describes how to install [actionlint](../docs).
 
 For Astral's prebuilt binaries, use the [Astral releases page](https://github.com/astral-sh/actionlint/releases)
 and follow the [release verification instructions](./releasing.md#verify-a-release) before extracting
-or running an archive. Astral container images and package-manager distributions are not published by
-this release workflow. To build this fork yourself, choose a reviewed full commit SHA:
+or running an archive. See [Docker usage](usage.md#docker) for Astral's GHCR images. This release workflow
+does not publish package-manager distributions. To build this fork yourself, choose a reviewed full commit SHA:
 
 ```sh
 go install github.com/astral-sh/actionlint/cmd/actionlint@<full-commit-sha>
