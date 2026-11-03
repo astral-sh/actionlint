@@ -1,0 +1,145 @@
+name: Build release container
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      binaries:
+        required: true
+        type: string
+    outputs:
+      artifact-id:
+        value: ${{ jobs.package.outputs.artifact-id }}
+      digest:
+        value: ${{ jobs.package.outputs.digest }}
+
+permissions:
+  contents: read
+
+env:
+  GOTOOLCHAIN: local
+  ACTIONS_CACHE_MODE: none
+
+jobs:
+  smoke:
+    name: Container on linux/${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.26.6'
+          cache: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ inputs.binaries }}
+          merge-multiple: true
+          path: ${{ runner.temp }}/dist
+      - name: Prepare verified binaries
+        env:
+          GOPROXY: 'off'
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          bash ./scripts/check-release.bash "$RELEASE_VERSION" "$RUNNER_TEMP/dist"
+          bash ./scripts/prepare-container.bash "$RUNNER_TEMP/dist" "$RELEASE_VERSION" "$RUNNER_TEMP/binaries"
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        with:
+          version: v0.36.1
+          cache-binary: false
+          driver-opts: image=moby/buildkit:v0.32.2@sha256:28a898719c18a33f4e8000685287fa36fd0dd9560c6440227d3a732d79bb41d8
+      - uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          build-contexts: binaries=${{ runner.temp }}/binaries
+          platforms: linux/${{ matrix.arch }}
+          load: true
+          tags: actionlint-smoke:local
+          provenance: false
+          sbom: false
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ inputs.version }}
+      - name: Check container behavior
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: bash ./scripts/check-container.bash actionlint-smoke:local "$RELEASE_VERSION"
+
+  package:
+    needs: smoke
+    runs-on: ubuntu-24.04
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      digest: ${{ steps.verify.outputs.digest }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.26.6'
+          cache: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ inputs.binaries }}
+          merge-multiple: true
+          path: ${{ runner.temp }}/dist
+      - name: Prepare verified binaries
+        env:
+          GOPROXY: 'off'
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          bash ./scripts/check-release.bash "$RELEASE_VERSION" "$RUNNER_TEMP/dist"
+          bash ./scripts/prepare-container.bash "$RUNNER_TEMP/dist" "$RELEASE_VERSION" "$RUNNER_TEMP/binaries"
+          mkdir -p "$RUNNER_TEMP/container"
+      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
+        with:
+          version: v0.36.1
+          cache-binary: false
+          driver-opts: image=moby/buildkit:v0.32.2@sha256:28a898719c18a33f4e8000685287fa36fd0dd9560c6440227d3a732d79bb41d8
+      - uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          build-contexts: binaries=${{ runner.temp }}/binaries
+          platforms: linux/amd64,linux/arm64
+          tags: ghcr.io/astral-sh/actionlint:${{ inputs.version }}
+          outputs: type=oci,dest=${{ runner.temp }}/container/layout,tar=false,compression=gzip,force-compression=true
+          provenance: mode=max
+          sbom: generator=docker.io/docker/buildkit-syft-scanner:stable-1@sha256:ae4f3b554449e7e25548e7d8ccc029d17357348e30c6e3df01b92bc93654d6a9
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ inputs.version }}
+      - name: Verify OCI contents and extract inventory
+        id: verify
+        env:
+          GOPROXY: 'off'
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          digest=$(go run ./scripts/release-container -layout "$RUNNER_TEMP/container/layout" \
+            -dist "$RUNNER_TEMP/dist" -output "$RUNNER_TEMP/container/metadata" \
+            -version "$RELEASE_VERSION" -commit "$RELEASE_COMMIT")
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        id: upload
+        with:
+          name: release-container
+          path: ${{ runner.temp }}/container
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
