@@ -14,7 +14,7 @@ for target in "${targets[@]}"; do
   extension=tar.gz
   if [[ $target == windows_* ]]; then extension=zip; fi
   archive="actionlint_${version}_${target}.${extension}"
-  assets+=("$archive")
+  assets+=("$archive" "$archive.cdx.json")
 done
 checksum="actionlint_${version}_checksums.txt"
 
