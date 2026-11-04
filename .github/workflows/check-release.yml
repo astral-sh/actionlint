@@ -1,0 +1,20 @@
+name: check-release
+
+on:
+  push:
+    branches: [main, 'agent/**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-release-binaries:
+    uses: ./.github/workflows/build-release-binaries.yml
+    with:
+      version: 0.0.0-dev.g${{ github.sha }}

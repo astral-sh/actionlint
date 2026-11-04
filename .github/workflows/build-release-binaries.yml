@@ -1,0 +1,74 @@
+name: Build release binaries
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+    outputs:
+      artifact-id:
+        value: ${{ jobs.build.outputs.artifact-id }}
+
+permissions:
+  contents: read
+
+env:
+  GOTOOLCHAIN: local
+  ACTIONS_CACHE_MODE: none
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.26.6'
+          cache: false
+      - run: go mod download && go mod verify
+      - name: Install pinned GoReleaser
+        run: |
+          set -euo pipefail
+          install -d "$RUNNER_TEMP/release-tools"
+          curl --fail --location --proto '=https' --tlsv1.2 \
+            https://github.com/goreleaser/goreleaser/releases/download/v2.17.1/goreleaser_Linux_x86_64.tar.gz \
+            --output "$RUNNER_TEMP/release-tools/goreleaser.tar.gz"
+          printf '%s  %s\n' \
+            a99bbc7ae0d8d897b07c4c497a9b62f222558804715ef219d1af05a7e417bc80 \
+            "$RUNNER_TEMP/release-tools/goreleaser.tar.gz" | sha256sum --check -
+          tar -xOf "$RUNNER_TEMP/release-tools/goreleaser.tar.gz" goreleaser > "$RUNNER_TEMP/release-tools/goreleaser"
+          chmod 755 "$RUNNER_TEMP/release-tools/goreleaser"
+      - name: Build and verify release artifacts
+        env:
+          GORELEASER_CURRENT_TAG: v${{ inputs.version }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          export PATH="$RUNNER_TEMP/release-tools:$PATH"
+          test "$(git rev-parse HEAD)" = "$RELEASE_COMMIT"
+          test -z "$(git status --porcelain --untracked-files=normal)"
+          test ! -e ../actionlint-release-dist
+          test ! -e "$RUNNER_TEMP/dist"
+          # The protected publisher creates the tag after this artifact is verified.
+          "$RUNNER_TEMP/release-tools/goreleaser" release --clean --skip=publish,validate
+          install -d "$RUNNER_TEMP/dist"
+          for artifact in ../actionlint-release-dist/actionlint_"$RELEASE_VERSION"_*; do
+            test -f "$artifact" && test ! -L "$artifact"
+            install -m 644 "$artifact" "$RUNNER_TEMP/dist/"
+          done
+          (cd "$RUNNER_TEMP/dist" && sha256sum --strict --check "actionlint_${RELEASE_VERSION}_checksums.txt")
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        id: upload
+        with:
+          name: release-binaries
+          path: ${{ runner.temp }}/dist/*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
