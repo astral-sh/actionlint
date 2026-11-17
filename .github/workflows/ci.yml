@@ -86,7 +86,7 @@ jobs:
           cache: false
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: '24.19.0'
+          node-version: '24.22.1'
           package-manager-cache: false
       - run: npm ci --ignore-scripts
       - name: Build playground
@@ -116,7 +116,7 @@ jobs:
           activate-environment: true
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
-          node-version: '24.19.0'
+          node-version: '24.22.1'
           package-manager-cache: false
       - name: Install linters
         run: |
